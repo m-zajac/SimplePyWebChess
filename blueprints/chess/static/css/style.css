@@ -1,0 +1,41 @@
+.game .board {
+    float: left;
+    width: 500px;
+    height: 511px;
+    padding: 41px 0 0 36px;
+    background: url('../img/board.png') no-repeat;
+}
+.game .board table {
+    border: none;
+    margin: 0;
+    padding: 0;
+}
+.game .board table td {
+    width: 53px;
+    height: 53px;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    text-align: center;
+    vertical-align: middle;
+    overflow: hidden;
+}
+.game .board table td .piece, .game .board table td .piece img {
+    margin: 0;
+    padding: 0;
+    border: 0;
+    cursor: pointer;
+}
+.game .board .square-hover {
+    opacity: 0.3;
+    background-color: #ff0;
+}
+.game .board .square-ok {
+    opacity: 0.3;
+    background-color: #0f0;
+}
+.game .options {
+    float: right;
+    height: 511px;
+    width: 400px;
+}

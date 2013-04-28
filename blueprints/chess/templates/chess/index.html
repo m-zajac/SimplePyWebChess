@@ -1,0 +1,43 @@
+{% extends "layout.html" %}
+
+{% block stylesheets %}
+    {{ super() }}
+    <link href="{{ url_for('chess.static', filename='css/style.css') }}" rel="stylesheet">
+{% endblock %}
+
+{% block javascripts %}
+    {{ super() }}
+    <script src="{{ url_for('chess.static', filename='js/models.js') }}"></script>
+    <script src="{{ url_for('chess.static', filename='js/views.js') }}"></script>
+    <script src="{{ url_for('chess.static', filename='js/game.js') }}"></script>
+    <script src="{{ url_for('chess.static', filename='js/ui.js') }}"></script>
+{% endblock %}
+
+{% block content %}
+    <div id="wrap">
+        <div class="container">
+            <div class="page-header">
+                <h1>Simple Python Web Chess Game</h1>
+            </div>
+
+            <p class="lead">
+                Welcome to SimplePyWebChess project demo. You can browse source code at <a href="https://github.com/zajonc5/SimplePyWebChess" target="_blank">GitHub</a>.
+                Feel free to submit any bugs <a href="https://github.com/zajonc5/SimplePyWebChess/issues" target="_blank">here</a>. Enjoy!
+            </p>
+
+            <div class="game">
+                <div class="board"></div>
+
+                <div class="options">
+                    <h2>Game options:</h2>
+
+                    <div>
+                        <input type="button" id="startgame" class="btn btn-success" value="Start new game" />
+                    </div>
+                </div>
+
+                <div class="clearfix"></div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

@@ -1,5 +1,6 @@
 """Board module"""
 import pieces
+import json
 
 
 class Square(object):
@@ -16,6 +17,17 @@ class Square(object):
 
 class Board(object):
     """Board class"""
+
+    # piece types dictionary
+    types_dict = {
+        'K': pieces.TypeKing,
+        'Q': pieces.TypeQueen,
+        'b': pieces.TypeBishop,
+        'k': pieces.TypeKnight,
+        'r': pieces.TypeRook,
+        'p': pieces.TypePawn
+    }
+
     def __init__(self):
         self.squares = tuple([
             tuple([
@@ -37,7 +49,8 @@ class Board(object):
         piece_dict = self.getDictForPiece(piece)
         piece_dict[piece.id] = {
             'piece': piece,
-            'pos':   pos
+            'pos':   pos,
+            'moves': 0
         }
         self.squares[pos[0]][pos[1]].piece = piece
 
@@ -67,6 +80,8 @@ class Board(object):
         self.squares[old_pos[0]][old_pos[1]].piece = None
         self.squares[new_position[0]][new_position[1]].piece = piece
         piece_dict[piece.id]['pos'] = new_position
+        piece_dict[piece.id]['moves'] += 1
+        piece.moves_count += 1
 
         return captured_piece
 
@@ -89,3 +104,44 @@ class Board(object):
             return False
 
         return True
+
+    def serialize(self):
+        reverse_types_dict = {v: k for k, v in self.types_dict.items()}
+        
+        def serialize_set(set):
+            result = {}
+            for id, setdata in set.iteritems():
+                result[id] = {
+                    't':  reverse_types_dict[setdata['piece'].type],
+                    'p':   setdata['pos'],
+                    'm': setdata['moves']
+                }
+
+            return result
+
+        whites = serialize_set(self.white_pieces)
+        blacks = serialize_set(self.black_pieces)
+
+        result = {
+            'whites': whites,
+            'blacks': blacks
+        }
+
+        return json.dumps(result, separators=(',', ':'))
+
+    def deserialize(self, data):
+        data = json.loads(data)
+
+        self.__init__()
+
+        def restore_set(data, destination_set, is_black):
+            for id, setdata in data.iteritems():
+                ptype = self.types_dict[setdata['t']]
+                p = pieces.Piece(ptype, is_black, id)
+                self.initPiece(p, tuple(setdata['p']))
+                destination_set[id]['moves'] = setdata['m']
+
+        restore_set(data['whites'], self.white_pieces, False)
+        restore_set(data['blacks'], self.black_pieces, True)
+
+        return self

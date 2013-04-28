@@ -3,6 +3,7 @@ import unittest
 import operator
 import board
 import pieces
+import game
 
 
 class BoardTests(unittest.TestCase):
@@ -36,13 +37,13 @@ class BoardTests(unittest.TestCase):
                 else:
                     self.assertTrue(squares[i][j].is_black)
 
-    def test_pieces(self):
+    def test_piece_actions(self):
         TestPiece1 = pieces.Piece(pieces.TypePawn, False, 'WP1')
-        piecePos1 = (4, 5)
+        piecePos1 = (4, 3)
         self.board.initPiece(TestPiece1, piecePos1)
 
-        TestPiece2 = pieces.Piece(pieces.TypeKing, True, 'BKing')
-        piecePos2 = (3, 6)
+        TestPiece2 = pieces.Piece(pieces.TypePawn, True, 'BP1')
+        piecePos2 = (4, 5)
         self.board.initPiece(TestPiece2, piecePos2)
 
         # test count
@@ -50,13 +51,17 @@ class BoardTests(unittest.TestCase):
         self.assertEqual(len(self.board.black_pieces), 1)
 
         # test move and capture
-        pos = (4, 6)
-        self.board.movePiece(TestPiece1, pos)
-        self.assertTupleEqual(self.board.white_pieces[TestPiece1.id]['pos'], pos)
+        # move p1 up, to (4, 4)
+        moves = TestPiece1.getMoves(piecePos1, self.board.squares)
+        self.assertEqual(len(moves), 1)
+        self.board.movePiece(TestPiece1, moves[0])
+        self.assertTupleEqual(self.board.white_pieces[TestPiece1.id]['pos'], (4, 4))
 
-        pos = (4, 6)
-        capture = self.board.movePiece(TestPiece2, pos)
-        self.assertTupleEqual(self.board.black_pieces[TestPiece2.id]['pos'], pos)
+        # move p2 up and capture
+        moves = TestPiece2.getMoves(piecePos2, self.board.squares)
+        self.assertEqual(len(moves), 1)
+        capture = self.board.movePiece(TestPiece2, moves[0])
+        self.assertTupleEqual(self.board.black_pieces[TestPiece2.id]['pos'], (4, 4))
         self.assertIsInstance(capture, pieces.Piece)
         self.assertEqual(len(self.board.white_pieces), 0)
 
@@ -114,17 +119,16 @@ class PieceTests(unittest.TestCase):
             delta = (p[0] - pos[0], p[1] - pos[1])
             self.assertIn(delta, [(1, 2), (2, 1), (2, -1), (1, -2), (-1, -2), (-2, -1), (-2, 1), (-1, 2)])
 
-        # Pawn - 1 square up
+        # Pawn
+        # 1 square up
         TestPiece.type = pieces.TypePawn
         positions = TestPiece.getMoves(pos, self.board.squares)
         self.assertTrue(len(positions) == 1)
-        for p in positions:
-            self.assertTrue(self.board.onBoard(p))
-            # different color after move
-            self.assertFalse(self.board.squares[p[0]][p[1]].is_black == self.board.squares[pos[0]][pos[1]].is_black)
-            # 1 up
-            delta = (p[0] - pos[0], p[1] - pos[1])
-            self.assertEqual(delta, (0, 1))
+        self.assertListEqual(positions, [(4, 5)])
+        # 2 squares up
+        positions = TestPiece.getMoves((4, 1), self.board.squares)
+        self.assertTrue(len(positions) == 2)
+        self.assertListEqual(positions, [(4, 2), (4, 3)])
 
     def test_King_moves(self):
         TestPiece = pieces.Piece(pieces.TypeKing, False, 'WKing')
@@ -143,3 +147,72 @@ class PieceTests(unittest.TestCase):
         Obstacle.is_black = True
         positions = TestPiece.getMoves(testPos, self.board.squares)
         self.assertIn(obstaclePos, positions)
+
+
+class GameTests(unittest.TestCase):
+    """Game testing class"""
+    def setUp(self):
+        self.board = board.Board()
+        self.game = game.Game(self.board)
+
+    def test_setup(self):
+        self.game.init_new()
+
+        self.assertEqual(len(self.board.white_pieces), 16)
+        self.assertEqual(len(self.board.black_pieces), 16)
+
+        self.assertIs(self.board.squares[0][0].piece.type, pieces.TypeRook)
+        self.assertFalse(self.board.squares[0][0].piece.is_black)
+
+        self.assertIs(self.board.squares[7][7].piece.type, pieces.TypeRook)
+        self.assertTrue(self.board.squares[7][7].piece.is_black)
+
+        self.assertIs(self.board.squares[4][0].piece.type, pieces.TypeKing)
+        self.assertFalse(self.board.squares[4][0].piece.is_black)
+
+        self.assertIs(self.board.squares[3][7].piece.type, pieces.TypeKing)
+        self.assertTrue(self.board.squares[3][7].piece.is_black)
+
+        for i in range(8):
+            for j in range(2):
+                self.assertIsNotNone(self.board.squares[i][j].piece)
+                self.assertIsNotNone(self.board.squares[i][7-j].piece)
+
+            for j in range(2, 5):
+                self.assertIsNone(self.board.squares[i][j].piece)
+                self.assertIsNone(self.board.squares[i][7-j].piece)
+
+    def test_board_serialization(self):
+        self.game.init_new()
+
+        serialized = self.board.serialize()
+
+        newboard = board.Board()
+        newboard.deserialize(serialized)
+
+        self.assertEqual(newboard.white_pieces, self.board.white_pieces)
+
+    def test_game(self):
+        self.game.init_new()
+
+        # http://en.wikibooks.org/wiki/Chess/Sample_chess_game
+        # w pawn
+        self.game.move((4, 1), (4, 3))
+        # b pawn
+        self.game.move((4, 6), (4, 4))
+        # w bishop
+        self.game.move((6, 0), (5, 2))
+        # b pawn
+        self.game.move((5, 6), (5, 5))
+        # w knight captures b pawn
+        self.game.move((5, 2), (4, 4))
+        self.assertIs(self.game.white_captures[0].type, pieces.TypePawn)
+        self.assertTrue(self.game.white_captures[0].is_black)
+        # b pawn captures white bishop
+        self.game.move((5, 5), (4, 4))
+        self.assertIs(self.game.black_captures[0].type, pieces.TypeKnight)
+        self.assertFalse(self.game.black_captures[0].is_black)
+        # w queen - check!
+        self.game.move((3, 0), (7, 4))
+
+        # TODO: checks, checkmates

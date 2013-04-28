@@ -3,10 +3,12 @@ from views import init
 from blueprints.chess import chess
 
 
-def create_app():
+def create_app(debug=False):
     app = Flask(__name__)
-    init(app)
+    app.debug = debug
 
     app.register_blueprint(chess, url_prefix='/chess')
+
+    init(app)
 
     return app

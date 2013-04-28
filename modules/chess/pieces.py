@@ -10,14 +10,26 @@ class Piece(object):
         self.id = id
         self.type = type
         self.is_black = is_black
+        self.moves_count = 0
 
     def getMoves(self, current_pos, squares):
         """Returns available moves offsets"""
         return self.type.getMoves(self, current_pos, squares)
 
+    def __eq__(self, other):
+        return self.id == other.id and self.type == other.type and self.is_black == other.is_black
+
+    def __str__(self):
+        name = 'Black' if self.is_black else 'White'
+        name += ' ' + self.id + ' (' + str(self.moves_count) + ' moves)'
+        return name
+
     @staticmethod
-    def add_move_to_pos(move, pos):
+    def add_move_to_pos(piece, move, pos):
         """Adds absolute move coordinates to given position"""
+        # for black move is reversed
+        if piece.is_black:
+            move = (-move[0], -move[1])
         return tuple(map(operator.add, move, pos))
 
     @staticmethod
@@ -32,7 +44,7 @@ class Piece(object):
             square = squares[position[0]][position[1]]
             return square.piece is None or square.piece.is_black != piece.is_black
 
-        positions = map(lambda m: Piece.add_move_to_pos(m, position), moves)
+        positions = map(lambda m: Piece.add_move_to_pos(piece, m, position), moves)
         positions = filter(lambda p: Piece.pos_in_squares(p, squares), positions)
         positions = filter(lambda p: filter_obstacles(piece, p, squares), positions)
         return positions
@@ -88,6 +100,29 @@ class TypePawn(object):
     """Pawn"""
     @staticmethod
     def getMoves(piece, current_pos, squares):
-        """1 square up"""
+        """1 square"""
         moves = [(0, 1)]
+        # if first move - may be 2 squares
+        if piece.moves_count == 0 and (current_pos[1] == 1 or current_pos[1] == 6):
+            moves.append((0, 2))
+
+        # check attacks
+        attacks = [(1, 1), (-1, 1)]
+        if TypePawn.checkAttack(piece, current_pos, attacks[0], squares):
+            moves.append(attacks[0])
+        if TypePawn.checkAttack(piece, current_pos, attacks[1], squares):
+            moves.append(attacks[1])
+
         return Piece.map_abs_moves_to_squares(piece, current_pos, moves, squares)
+
+    @staticmethod
+    def checkAttack(piece, current_pos, attack_move, squares):
+        attack_position = Piece.map_abs_moves_to_squares(piece, current_pos, [attack_move], squares)[0]
+        attacked = squares[attack_position[0]][attack_position[1]].piece
+        if not attacked:
+            return False
+        if attacked.is_black == piece.is_black:
+            return False
+
+        return True
+
