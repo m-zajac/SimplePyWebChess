@@ -29,14 +29,13 @@ class Board(object):
     }
 
     def __init__(self):
-        self.squares = tuple([
-            tuple([
-                Square(not ((i + j) % 2)) for i in range(8)
-            ]) for j in range(8)
-        ])
+        self.squares = [[Square(not ((i + j) % 2)) for i in range(8)] for j in range(8)]
+        self.squares_reversed = [[self.squares[7-i][7-j] for i in range(8)] for j in range(8)]
 
         self.white_pieces = {}
+        self.white_captures = []
         self.black_pieces = {}
+        self.black_captures = []
 
     def getDictForPiece(self, piece):
         return self.black_pieces if piece.is_black else self.white_pieces
@@ -70,7 +69,7 @@ class Board(object):
         if captured_piece:
             if captured_piece.is_black != piece.is_black:
                 # take captured piece off board
-                self.removePiece(captured_piece)
+                self.removePiece(captured_piece, True)
             else:
                 # same color, invalid move!
                 raise ValueError('Square already occupied!')
@@ -85,12 +84,18 @@ class Board(object):
 
         return captured_piece
 
-    def removePiece(self, piece):
+    def removePiece(self, piece, capture=False):
         """Removes piece from board"""
         piece_dict = self.getDictForPiece(piece)
         pos = piece_dict[piece.id]['pos']
         self.squares[pos[0]][pos[1]].piece = None
         del piece_dict[piece.id]
+
+        if capture:
+            if piece.is_black:
+                self.white_captures.append(piece)
+            else:
+                self.black_captures.append(piece)
 
         return self
 
@@ -107,7 +112,7 @@ class Board(object):
 
     def serialize(self):
         reverse_types_dict = {v: k for k, v in self.types_dict.items()}
-        
+
         def serialize_set(set):
             result = {}
             for id, setdata in set.iteritems():

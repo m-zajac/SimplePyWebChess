@@ -8,9 +8,8 @@ class Game(object):
     def __init__(self, gameboard=None, move_generator=None):
         super(Game, self).__init__()
 
+        # whites turn first
         self.black_moves = False
-        self.white_captures = []
-        self.black_captures = []
 
         self.board = gameboard
         if not self.board:
@@ -71,17 +70,11 @@ class Game(object):
         if piece.is_black != self.black_moves:
             raise ValueError('Invaid player')
 
-        valid_destinations = piece.getMoves(pos_from, self.board.squares)
+        valid_destinations = piece.getMoves(pos_from, self.board)
         if not pos_to in valid_destinations:
             raise ValueError('Invalid move destination')
 
-        capture = self.board.movePiece(piece, pos_to)
-        if capture:
-            if self.black_moves:
-                self.black_captures.append(capture)
-            else:
-                self.white_captures.append(capture)
-
+        self.board.movePiece(piece, pos_to)
         self.black_moves = not self.black_moves
 
         return self
