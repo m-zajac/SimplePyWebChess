@@ -14,9 +14,24 @@ class Square(object):
 
         self.is_black = is_black
 
+    def __eq__(self, other):
+        return self.piece == other.piece and self.is_black == other.is_black
+
 
 class Board(object):
-    """Board class"""
+    """Board class
+    This object will probably be copied, so it's just data. Methods for managing board are in BoardManager class
+    """
+    def __init__(self):
+        """Initialize board"""
+        self.squares = [[Square(not ((i + j) % 2)) for i in range(8)] for j in range(8)]
+
+        # symmetrical board, for moving black pieces
+        self.squares_reversed = [[self.squares[7-i][7-j] for i in range(8)] for j in range(8)]
+
+
+class BoardManager(object):
+    """Board manager class"""
 
     # piece types dictionary
     types_dict = {
@@ -28,78 +43,54 @@ class Board(object):
         'p': pieces.TypePawn
     }
 
-    def __init__(self):
-        self.squares = [[Square(not ((i + j) % 2)) for i in range(8)] for j in range(8)]
-        self.squares_reversed = [[self.squares[7-i][7-j] for i in range(8)] for j in range(8)]
+    @staticmethod
+    def getDictForPiece(board, piece):
+        return board.black_pieces if piece.is_black else board.white_pieces
 
-        self.white_pieces = {}
-        self.white_captures = []
-        self.black_pieces = {}
-        self.black_captures = []
-
-    def getDictForPiece(self, piece):
-        return self.black_pieces if piece.is_black else self.white_pieces
-
-    def initPiece(self, piece, pos, validate=True):
+    @staticmethod
+    def initPiece(board, piece, pos, validate=True):
         """Sets piece on board"""
-        if validate and not self.onBoard(pos):
+        if validate and not BoardManager.onBoard(pos):
             raise ValueError('Position out of board!')
 
-        piece_dict = self.getDictForPiece(piece)
-        piece_dict[piece.id] = {
-            'piece': piece,
-            'pos':   pos,
-            'moves': 0
-        }
-        self.squares[pos[0]][pos[1]].piece = piece
+        piece.position = pos
+        piece.moves_count = 0
 
-        return self
+        board.squares[pos[0]][pos[1]].piece = piece
 
-    def movePiece(self, piece, new_position, validate=True):
+    @staticmethod
+    def movePiece(board, piece, new_position, validate=True):
         """Moves piece. If there is capture, captured piece is returned. Otherwise None is returned"""
-        if validate and not self.onBoard(new_position):
+        if validate and not BoardManager.onBoard(new_position):
             raise ValueError('Position out of board!')
 
-        piece_dict = self.getDictForPiece(piece)
-        if not piece.id in piece_dict:
-            raise ValueError('There is no piece ' + piece.id + ' on board')
-
-        # capture
-        captured_piece = self.squares[new_position[0]][new_position[1]].piece
+        # capture?
+        captured_piece = board.squares[new_position[0]][new_position[1]].piece
         if captured_piece:
-            if captured_piece.is_black != piece.is_black:
-                # take captured piece off board
-                self.removePiece(captured_piece, True)
-            else:
+            if captured_piece.is_black == piece.is_black:
                 # same color, invalid move!
                 raise ValueError('Square already occupied!')
 
+            captured_piece.position = None
+
         # move
-        old_pos = piece_dict[piece.id]['pos']
-        self.squares[old_pos[0]][old_pos[1]].piece = None
-        self.squares[new_position[0]][new_position[1]].piece = piece
-        piece_dict[piece.id]['pos'] = new_position
-        piece_dict[piece.id]['moves'] += 1
+        old_pos = piece.position
+        board.squares[old_pos[0]][old_pos[1]].piece = None
+        board.squares[new_position[0]][new_position[1]].piece = piece
+        piece.position = new_position
         piece.moves_count += 1
 
         return captured_piece
 
-    def removePiece(self, piece, capture=False):
+    @staticmethod
+    def removePiece(board, piece):
         """Removes piece from board"""
-        piece_dict = self.getDictForPiece(piece)
-        pos = piece_dict[piece.id]['pos']
-        self.squares[pos[0]][pos[1]].piece = None
-        del piece_dict[piece.id]
+        pos = piece.position
+        board.squares[pos[0]][pos[1]].piece = None
+        piece.position = None
 
-        if capture:
-            if piece.is_black:
-                self.white_captures.append(piece)
-            else:
-                self.black_captures.append(piece)
-
-        return self
-
-    def onBoard(self, position):
+    @staticmethod
+    def onBoard(position):
         def rangeok(val):
             if val < 0 or val > 7:
                 return False
@@ -110,43 +101,36 @@ class Board(object):
 
         return True
 
-    def serialize(self):
-        reverse_types_dict = {v: k for k, v in self.types_dict.items()}
+    @staticmethod
+    def serialize(board):
+        reverse_types_dict = {v: k for k, v in BoardManager.types_dict.items()}
 
-        def serialize_set(set):
-            result = {}
-            for id, setdata in set.iteritems():
-                result[id] = {
-                    't':  reverse_types_dict[setdata['piece'].type],
-                    'p':   setdata['pos'],
-                    'm': setdata['moves']
-                }
+        pieces = []
+        for row in board.squares:
+            for square in row:
+                p = square.piece
+                if p:
+                    pieces.append(p)
 
-            return result
-
-        whites = serialize_set(self.white_pieces)
-        blacks = serialize_set(self.black_pieces)
-
-        result = {
-            'whites': whites,
-            'blacks': blacks
-        }
+        result = {}
+        for p in pieces:
+            result[p.id] = {
+                't': reverse_types_dict[p.type],
+                'p': p.position,
+                'm': p.moves_count,
+                'b': p.is_black
+            }
 
         return json.dumps(result, separators=(',', ':'))
 
-    def deserialize(self, data):
+    @staticmethod
+    def deserialize(board, board_manager, data):
         data = json.loads(data)
 
-        self.__init__()
+        board.__init__()
 
-        def restore_set(data, destination_set, is_black):
-            for id, setdata in data.iteritems():
-                ptype = self.types_dict[setdata['t']]
-                p = pieces.Piece(ptype, is_black, id)
-                self.initPiece(p, tuple(setdata['p']))
-                destination_set[id]['moves'] = setdata['m']
-
-        restore_set(data['whites'], self.white_pieces, False)
-        restore_set(data['blacks'], self.black_pieces, True)
-
-        return self
+        for id, piecedata in data.iteritems():
+            ptype = BoardManager.types_dict[piecedata['t']]
+            p = pieces.Piece(ptype, piecedata['b'], id)
+            p.moves_count = piecedata['m']
+            board_manager.initPiece(board, p, tuple(piecedata['p']))

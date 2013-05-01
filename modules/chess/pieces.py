@@ -11,6 +11,7 @@ class Piece(object):
         self.type = type
         self.is_black = is_black
         self.moves_count = 0
+        self.position = None
 
     def getMoves(self, current_pos, board):
         """Returns available moves offsets"""

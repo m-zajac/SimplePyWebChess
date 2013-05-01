@@ -11,11 +11,15 @@ class Game(object):
         # whites turn first
         self.black_moves = False
 
+        self.board_manager = board.BoardManager
         self.board = gameboard
         if not self.board:
             self.board = board.Board()
 
         self.move_generator = move_generator
+
+        self.white_captures = []
+        self.black_captures = []
 
     def init_new(self):
         """Initialize game. self.board must be present."""
@@ -49,17 +53,18 @@ class Game(object):
 
         white_pieces = make_piece_set(False, 'W')
         for pos, piece in white_pieces.iteritems():
-            self.board.initPiece(piece, pos, False)
+            self.board_manager.initPiece(self.board, piece, pos, False)
 
         black_pieces = make_piece_set(True, 'B')
         for pos, piece in black_pieces.iteritems():
             # symetrical
             pos = (7 - pos[0], 7 - pos[1])
-            self.board.initPiece(piece, pos, False)
+            self.board_manager.initPiece(self.board, piece, pos, False)
 
         return self
 
     def move(self, pos_from=None, pos_to=None):
+        """Makes move. Returns captured piece, if any"""
         if not pos_to:
             # empty destination, run move generator
             pos_from, pos_to = self.move_generator.move(self.board, pos_from)
@@ -74,7 +79,13 @@ class Game(object):
         if not pos_to in valid_destinations:
             raise ValueError('Invalid move destination')
 
-        self.board.movePiece(piece, pos_to)
+        capture = self.board_manager.movePiece(self.board, piece, pos_to)
+        if capture:
+            if capture.is_black:
+                self.white_captures.append(capture)
+            else:
+                self.black_captures.append(capture)
+
         self.black_moves = not self.black_moves
 
-        return self
+        return capture

@@ -14,6 +14,6 @@ def init(blueprint):
         chessgame = game.Game()
         chessgame.init_new()
 
-        return Response(response=chessgame.board.serialize(),
+        return Response(response=chessgame.board_manager.serialize(chessgame.board),
                         status=200,
                         mimetype="application/json")

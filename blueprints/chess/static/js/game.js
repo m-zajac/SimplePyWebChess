@@ -9,6 +9,9 @@
         'p': Pawn
     }
 
+    /**
+     * Game object. Manages game, communicates with backend.
+     */
     Game = function(){
         this.pieces = new Backbone.Collection;
         this.urls = {
@@ -21,6 +24,7 @@
          * Prepare board (drags)
          */
         initBoard: function(){
+            var g = this;
             var board_el = $('.game .board tbody');
             board_el.find('td').each(function(){
                 $(this).droppable({
@@ -30,13 +34,24 @@
                         return $(this).is('td') && $(this).find('.piece[data-black="' + $(draggable[0]).attr('data-black') + '"]').length == 0;
                     },
                     drop: function(event, ui) {
+                        var dragged_piece_id = ui.draggable.first().attr('id');
+                        var dragged_piece = g.pieces.get(dragged_piece_id);
+
+                        var destination = [
+                            parseInt($(this).attr('data-x')),
+                            parseInt($(this).attr('data-y')),
+                        ];
+
                         // if there is other players piece, remove it
-                        var piece = $(this).find('.piece').first();
-                        if (piece && piece.attr('data-black') != $(ui.draggable).attr('data-black')) {
-                            piece.remove();
+                        var captured_piece_el = $(this).find('.piece');
+                        if (captured_piece_el.length > 0) {
+                            var captured_piece_id = captured_piece_el.first().attr('id');
+                            var captured_piece = g.pieces.get(captured_piece_id);
+
+                            captured_piece.set('position', null);
                         }
 
-                        $(this).append(ui.draggable);
+                        dragged_piece.set('position', destination);
                     }
                 });
             });
@@ -57,37 +72,33 @@
         start: function(){
             var g = this;
 
-            // clear data
-            if (this.pieces.models.length > 0) {
-                _.each(this.pieces.models, function(el){
-                    el.view.remove();
-                });
-                this.initPieces();
-            }
-
             $.getJSON(this.urls.init, function(board_data) {
-                var setup_color = function(data, is_black) {
-                    for (id in data) {
-                        piecedata = data[id]
+                // capture containers
+                whites_capture_cont = $('.game .white_captures');
+                blacks_capture_cont = $('.game .black_captures');
 
+                // create pieces from data
+                for (id in board_data) {
+                    piecedata = board_data[id];
+                    piece = g.pieces.get(id);
+                    if (!piece) {
                         piece = new types_dict[piecedata['t']];
                         piece.set('id', id);
-                        piece.set('moves_count', piecedata['m']);
-                        piece.set('is_black', is_black);
-
-                        view = new PieceView({
-                            model:      piece
-                        });
-                        piece.view = view;
-
-                        view.render();
-                        $('.game .board td[data-x="' + piecedata['p'][0] + '"][data-y="' + piecedata['p'][1] + '"]').append(view.$el);
+                        piece.set('is_black', piecedata['b']);
 
                         g.pieces.add(piece);
+
+                        view = new PieceView({
+                            model: piece,
+                            board: $('.game .board'),
+                            capture_cont: (piece.get('is_black') ? whites_capture_cont : blacks_capture_cont)
+                        });
+                        view.render();
                     }
+
+                    piece.set('position', piecedata['p']);
+                    piece.set('moves_count', piecedata['m']);
                 }
-                setup_color(board_data.whites, false);
-                setup_color(board_data.blacks, true);
             });
 
             return this;

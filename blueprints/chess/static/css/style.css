@@ -1,7 +1,6 @@
 .game .board {
     float: left;
     width: 500px;
-    height: 511px;
     padding: 41px 0 0 36px;
     background: url('../img/board.png') no-repeat;
 }
@@ -34,6 +33,33 @@
     opacity: 0.3;
     background-color: #0f0;
 }
+.game .captures {
+    float: left;
+    clear: left;
+    height: 100px;
+    width: 460px;
+    margin: 0 0 0 41px;
+}
+.game .captures .piece {
+    float: left;
+    margin: 0 0.6px 0;
+    padding: 0;
+}
+.game .black_captures {
+    -webkit-transform: scaleY(-1);
+    -moz-transform: scaleY(-1);
+    -o-transform: scaleY(-1);
+    -ms-transform: scaleY(-1);
+    transform: scaleY(-1);
+}
+.game .black_captures .piece {
+    -webkit-transform: scaleY(-1);
+    -moz-transform: scaleY(-1);
+    -o-transform: scaleY(-1);
+    -ms-transform: scaleY(-1);
+    transform: scaleY(-1);
+}
+
 .game .options {
     float: right;
     height: 511px;
