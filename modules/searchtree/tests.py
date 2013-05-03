@@ -53,6 +53,38 @@ class DepthFirstNodeTests(unittest.TestCase):
 
 
 class MinimaxTests(unittest.TestCase):
+    def test_simple(self):
+        self.init1(nodes.MinNode, nodes.MaxNode)
+        self.root.traverse()
+        self.assertEqual(self.root.value, -7)
+        self.assertEqual(self.root.data, 'l8')
+        self.assertEqual(self.root.evaluations, 22)
+
+        self.init2(nodes.MinNode, nodes.MaxNode)
+        self.root.traverse()
+        self.assertEqual(self.root.value, 6)
+        self.assertEqual(self.root.data, 'l7')
+        self.assertEqual(self.root.evaluations, 33)
+
+    def test_ab(self):
+        self.init1(nodes.MinABNode, nodes.MaxABNode)
+        self.root.traverse()
+        self.assertEqual(self.root.value, -7)
+        self.assertEqual(self.root.data, 'l8')
+        self.assertEqual(self.root.evaluations, 22)
+
+        self.init2(nodes.MinABNode, nodes.MaxABNode)
+        self.root.traverse()
+        self.assertEqual(self.root.value, 6)
+        self.assertEqual(self.root.data, 'l7')
+        self.assertEqual(self.root.evaluations, 25)
+
+        self.init3(nodes.MinABNode, nodes.MaxABNode)
+        self.root.traverse()
+        self.assertEqual(self.root.value, 4)
+        self.assertEqual(self.root.data, 'l1')
+        self.assertEqual(self.root.evaluations, 11)
+
     def init1(self, MinNode, MaxNode):
         # http://en.wikipedia.org/wiki/Minimax#Example_2
 
@@ -138,28 +170,30 @@ class MinimaxTests(unittest.TestCase):
 
         self.root = root
 
-    def test_simple(self):
-        self.init1(nodes.MinNode, nodes.MaxNode)
-        self.root.traverse()
-        self.assertEqual(self.root.value, -7)
-        self.assertEqual(self.root.data, 'l8')
-        self.assertEqual(self.root.evaluations, 22)
+    def init3(self, MinNode, MaxNode):
+        """Best a-b case"""
 
-        self.init2(nodes.MinNode, nodes.MaxNode)
-        self.root.traverse()
-        self.assertEqual(self.root.value, 6)
-        self.assertEqual(self.root.data, 'l7')
-        self.assertEqual(self.root.evaluations, 33)
+        # leafs - min nodes- level 3
+        l1  = MinNode('l1', 4)
+        l2  = MinNode('l2', 1)
+        l3  = MinNode('l3', 6)
+        l4  = MinNode('l4', 2)
+        l5  = MinNode('l5', 3)
+        l6  = MinNode('l6', 0)
+        l7  = MinNode('l7', 7)
+        l8  = MinNode('l8', 8)
 
-    def test_ab(self):
-        self.init1(nodes.MinABNode, nodes.MaxABNode)
-        self.root.traverse()
-        self.assertEqual(self.root.value, -7)
-        self.assertEqual(self.root.data, 'l8')
-        self.assertEqual(self.root.evaluations, 22)
+        # level 2 - max nodes
+        n2_1 = MaxNode().addNode(l1).addNode(l2)
+        n2_2 = MaxNode().addNode(l3).addNode(l4)
+        n2_3 = MaxNode().addNode(l5).addNode(l6)
+        n2_4 = MaxNode().addNode(l7).addNode(l8)
 
-        self.init2(nodes.MinABNode, nodes.MaxABNode)
-        self.root.traverse()
-        self.assertEqual(self.root.value, 6)
-        self.assertEqual(self.root.data, 'l7')
-        self.assertEqual(self.root.evaluations, 25)
+        # level 1 - min nodes
+        n1_1 = MinNode().addNode(n2_1).addNode(n2_2)
+        n1_2 = MinNode().addNode(n2_3).addNode(n2_4)
+
+        # root - max node
+        root = MaxNode().addNode(n1_1).addNode(n1_2)
+
+        self.root = root
