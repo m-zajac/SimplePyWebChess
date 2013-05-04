@@ -38,7 +38,7 @@ class BoardTests(unittest.TestCase):
                 else:
                     self.assertTrue(self.board.squares[i][j].is_black)
                 # check reversed
-                self.assertEqual(self.board.squares[i][j], self.board.squares_reversed[7-j][7-i], str(i) + ', ' + str(j))
+                self.assertEqual(self.board.squares[i][j], self.board.squares_reversed[7-i][7-j], str(i) + ', ' + str(j))
 
     def test_piece_actions(self):
         board_manager = board.BoardManager
@@ -46,10 +46,12 @@ class BoardTests(unittest.TestCase):
         TestPiece1 = pieces.Piece(pieces.TypePawn, False, 'WP1')
         piecePos1 = (4, 3)
         board_manager.initPiece(self.board, TestPiece1, piecePos1)
+        TestPiece1.moves_count = 1
 
         TestPiece2 = pieces.Piece(pieces.TypePawn, True, 'BP1')
         piecePos2 = (4, 5)
         board_manager.initPiece(self.board, TestPiece2, piecePos2)
+        TestPiece2.moves_count = 1
 
         # test count
         white_pieces = []
@@ -65,104 +67,240 @@ class BoardTests(unittest.TestCase):
         self.assertEqual(len(white_pieces), 1)
         self.assertEqual(len(black_pieces), 1)
 
-        # test move and capture
-        # move p1 up, to (4, 4)
-        moves = TestPiece1.getMoves(piecePos1, self.board)
-        self.assertEqual(len(moves), 1)
-        board_manager.movePiece(self.board, TestPiece1, moves[0])
-        self.assertTupleEqual(TestPiece1.position, (4, 4))
-
-        # move p2 up and capture
-        moves = TestPiece2.getMoves(piecePos2, self.board)
-        self.assertEqual(len(moves), 1)
-        capture = board_manager.movePiece(self.board, TestPiece2, moves[0])
-        self.assertTupleEqual(TestPiece2.position, (4, 4))
-        self.assertIsInstance(capture, pieces.Piece)
-        self.assertIsNone(capture.position)
+        # test board squares
+        self.assertEqual(self.board.squares[4][3].piece, TestPiece1)
+        self.assertEqual(self.board.squares_reversed[3][4].piece, TestPiece1)
+        self.assertEqual(self.board.squares[4][5].piece, TestPiece2)
+        self.assertEqual(self.board.squares_reversed[3][2].piece, TestPiece2)
 
         # test remove
         board_manager.removePiece(self.board, TestPiece2)
         self.assertIsNone(TestPiece2.position)
 
 
-class PieceTests(unittest.TestCase):
-    """Piece testing class"""
+class PawnTests(unittest.TestCase):
+    """Pawn testing class"""
     def setUp(self):
         self.board = board.Board()
         self.board_manager = board.BoardManager
 
-    def test_empty_board_moves(self):
-        # move list from center of the board
-        pos = (4, 4)
+    def test_moves(self):
+        # init white
+        TestPieceW = pieces.Piece(pieces.TypePawn, False)
+        self.board_manager.initPiece(self.board, TestPieceW, (0, 1))
 
-        # King - 1 square each direction == 8
+        # init black
+        TestPieceB = pieces.Piece(pieces.TypePawn, True)
+        self.board_manager.initPiece(self.board, TestPieceB, (0, 6))
+
+        # check initial 2 moves
+        movelistW = TestPieceW.getMoves(self.board)
+        self.assertEqual(len(movelistW), 2)
+        self.assertEqual(movelistW[0].moves[0][1], (0, 2))
+        self.assertEqual(movelistW[1].moves[0][1], (0, 3))
+
+        movelistB = TestPieceB.getMoves(self.board)
+        self.assertEqual(len(movelistB), 2)
+        self.assertEqual(movelistB[0].moves[0][1], (0, 5))
+        self.assertEqual(movelistB[1].moves[0][1], (0, 4))
+
+        # move 2 squares
+        self.board_manager.move(self.board, movelistW[1])
+        self.assertEqual(TestPieceW.position, (0, 3))
+
+        self.board_manager.move(self.board, movelistB[1])
+        self.assertEqual(TestPieceB.position, (0, 4))
+
+        # no moves left
+        movelistW = TestPieceW.getMoves(self.board)
+        movelistB = TestPieceB.getMoves(self.board)
+        self.assertEqual(len(movelistW), 0)
+        self.assertEqual(len(movelistB), 0)
+
+    def test_attack(self):
+        # init white
+        TestPieceW = pieces.Piece(pieces.TypePawn, False)
+        self.board_manager.initPiece(self.board, TestPieceW, (3, 2))
+
+        # init black
+        TestPieceB = pieces.Piece(pieces.TypePawn, True)
+        self.board_manager.initPiece(self.board, TestPieceB, (4, 3))
+
+        # test moves
+        movelistW = TestPieceW.getMoves(self.board)
+        self.assertEqual(len(movelistW), 2)
+        self.assertEqual(movelistW[0].moves[0][1], (3, 3))
+        self.assertEqual(movelistW[1].moves[0][1], TestPieceB.position)
+
+        movelistB = TestPieceB.getMoves(self.board)
+        self.assertEqual(len(movelistB), 2)
+        self.assertEqual(movelistB[0].moves[0][1], (4, 2))
+        self.assertEqual(movelistB[1].moves[0][1], TestPieceW.position)
+
+    def test_move2squares_blocked(self):
+        # init white
+        TestPieceW = pieces.Piece(pieces.TypePawn, False)
+        self.board_manager.initPiece(self.board, TestPieceW, (0, 1))
+
+        # init black
+        TestPieceB = pieces.Piece(pieces.TypePawn, True)
+        self.board_manager.initPiece(self.board, TestPieceB, (0, 2))
+
+        # test moves
+        movelistW = TestPieceW.getMoves(self.board)
+        self.assertEqual(len(movelistW), 0)
+
+    def test_blocked(self):
+        # init white
+        TestPieceW = pieces.Piece(pieces.TypePawn, False)
+        self.board_manager.initPiece(self.board, TestPieceW, (0, 7))
+
+        # test moves
+        movelistW = TestPieceW.getMoves(self.board)
+        self.assertEqual(len(movelistW), 0)
+
+
+class KingTests(unittest.TestCase):
+    """King testing class"""
+    def setUp(self):
+        self.board = board.Board()
+        self.board_manager = board.BoardManager
+
+    def test_moves(self):
         TestPiece = pieces.Piece(pieces.TypeKing, False)
-        positions = TestPiece.getMoves(pos, self.board)
-        self.assertEqual(len(positions), 8)
-        for p in positions:
-            self.assertTrue(self.board_manager.onBoard(p))
+        self.board_manager.initPiece(self.board, TestPiece, (4, 4))
 
-            p = map(operator.sub, pos, p)
+        movelists = TestPiece.getMoves(self.board)
+        self.assertEqual(len(movelists), 8)
+        for move in movelists:
+            p = map(operator.sub, (4, 4), move.moves[0][1])
             self.assertLessEqual(abs(complex(p[0], p[1])), 1.5)
             self.assertGreaterEqual(abs(complex(p[0], p[1])), 0.0)
 
-        # Queen - 1+ square in 8 directions
-        TestPiece.type = pieces.TypeQueen
-        positions = TestPiece.getMoves(pos, self.board)
-        for p in positions:
-            self.assertTrue(self.board_manager.onBoard(p))
-            self.assertNotIn(p, [(2, 3), (3, 2), (5, 1), (5, 6), (5, 7), (6, 1)])
+    def test_blocked(self):
+        TestPiece = pieces.Piece(pieces.TypeKing, False)
+        self.board_manager.initPiece(self.board, TestPiece, (0, 0))
 
-        # Bishop - diagonal
-        TestPiece.type = pieces.TypeBishop
-        positions = TestPiece.getMoves(pos, self.board)
-        for p in positions:
-            self.assertTrue(self.board_manager.onBoard(p))
-            # same color after move
-            self.assertTrue(self.board.squares[p[0]][p[1]].is_black == self.board.squares[pos[0]][pos[1]].is_black)
+        O1 = pieces.Piece(pieces.TypePawn, False)
+        self.board_manager.initPiece(self.board, O1, (1, 0))
+        O2 = pieces.Piece(pieces.TypePawn, False)
+        self.board_manager.initPiece(self.board, O2, (1, 1))
+        O3 = pieces.Piece(pieces.TypePawn, False)
+        self.board_manager.initPiece(self.board, O3, (0, 1))
+
+        movelists = TestPiece.getMoves(self.board)
+        self.assertEqual(len(movelists), 0)
+
+
+class QueenTests(unittest.TestCase):
+    """Queen testing class"""
+    def setUp(self):
+        self.board = board.Board()
+        self.board_manager = board.BoardManager
+
+    def test_moves(self):
+        TestPiece = pieces.Piece(pieces.TypeQueen, False)
+        self.board_manager.initPiece(self.board, TestPiece, (4, 4))
+
+        movelists = TestPiece.getMoves(self.board)
+        for move in movelists:
+            self.assertNotIn(move.moves[0][1], [(2, 3), (3, 2), (5, 1), (5, 6), (5, 7), (6, 1)])
+
+    def test_blocked(self):
+        TestPiece = pieces.Piece(pieces.TypeQueen, False)
+        self.board_manager.initPiece(self.board, TestPiece, (0, 0))
+
+        O1 = pieces.Piece(pieces.TypePawn, False)
+        self.board_manager.initPiece(self.board, O1, (1, 0))
+        O2 = pieces.Piece(pieces.TypePawn, False)
+        self.board_manager.initPiece(self.board, O2, (1, 1))
+        O3 = pieces.Piece(pieces.TypePawn, False)
+        self.board_manager.initPiece(self.board, O3, (0, 1))
+
+        movelists = TestPiece.getMoves(self.board)
+        self.assertEqual(len(movelists), 0)
+
+    def test_blocked2(self):
+        TestPiece = pieces.Piece(pieces.TypeQueen, False)
+        self.board_manager.initPiece(self.board, TestPiece, (3, 0))
+
+        P1 = pieces.Piece(pieces.TypePawn, False)
+        self.board_manager.initPiece(self.board, P1, (3, 1))
+        P2 = pieces.Piece(pieces.TypePawn, False)
+        self.board_manager.initPiece(self.board, P2, (2, 1))
+        B = pieces.Piece(pieces.TypeBishop, False)
+        self.board_manager.initPiece(self.board, B, (2, 0))
+        K = pieces.Piece(pieces.TypeKing, False)
+        self.board_manager.initPiece(self.board, K, (4, 0))
+
+        movelists = TestPiece.getMoves(self.board)
+        self.assertEqual(len(movelists), 4)
+
+
+class BishopTests(unittest.TestCase):
+    """Bishop testing class"""
+    def setUp(self):
+        self.board = board.Board()
+        self.board_manager = board.BoardManager
+
+    def test_moves(self):
+        TestPiece = pieces.Piece(pieces.TypeBishop, False)
+        self.board_manager.initPiece(self.board, TestPiece, (4, 4))
+
+        movelists = TestPiece.getMoves(self.board)
+        for move in movelists:
+            # same square color after move
+            self.assertTrue(self.board.squares[move.moves[0][1][0]][move.moves[0][1][1]].is_black == self.board.squares[4][4].is_black)
             # only diagonal
-            delta = (p[0] - pos[0], p[1] - pos[1])
+            delta = (move.moves[0][1][0] - 4, move.moves[0][1][1] - 4)
             self.assertTrue(abs(delta[0]) == abs(delta[1]))
 
-        # Knight - L moves
-        TestPiece.type = pieces.TypeKnight
-        positions = TestPiece.getMoves(pos, self.board)
-        for p in positions:
-            self.assertTrue(self.board_manager.onBoard(p))
+    def test_blocked(self):
+        TestPiece = pieces.Piece(pieces.TypeBishop, False)
+        self.board_manager.initPiece(self.board, TestPiece, (0, 0))
+
+        O1 = pieces.Piece(pieces.TypePawn, False)
+        self.board_manager.initPiece(self.board, O1, (1, 0))
+        O2 = pieces.Piece(pieces.TypePawn, False)
+        self.board_manager.initPiece(self.board, O2, (1, 1))
+        O3 = pieces.Piece(pieces.TypePawn, False)
+        self.board_manager.initPiece(self.board, O3, (0, 1))
+
+        movelists = TestPiece.getMoves(self.board)
+        self.assertEqual(len(movelists), 0)
+
+
+class KnightTests(unittest.TestCase):
+    """Knight testing class"""
+    def setUp(self):
+        self.board = board.Board()
+        self.board_manager = board.BoardManager
+
+    def test_moves(self):
+        TestPiece = pieces.Piece(pieces.TypeKnight, False)
+        self.board_manager.initPiece(self.board, TestPiece, (4, 4))
+
+        movelists = TestPiece.getMoves(self.board)
+        for move in movelists:
             # different color after move
-            self.assertFalse(self.board.squares[p[0]][p[1]].is_black == self.board.squares[pos[0]][pos[1]].is_black)
+            self.assertFalse(self.board.squares[move.moves[0][1][0]][move.moves[0][1][1]].is_black == self.board.squares[4][4].is_black)
             # L
-            delta = (p[0] - pos[0], p[1] - pos[1])
+            delta = (move.moves[0][1][0] - 4, move.moves[0][1][1] - 4)
             self.assertIn(delta, [(1, 2), (2, 1), (2, -1), (1, -2), (-1, -2), (-2, -1), (-2, 1), (-1, 2)])
 
-        # Pawn
-        # 1 square up
-        TestPiece.type = pieces.TypePawn
-        positions = TestPiece.getMoves(pos, self.board)
-        self.assertTrue(len(positions) == 1)
-        self.assertListEqual(positions, [(4, 5)])
-        # 2 squares up
-        positions = TestPiece.getMoves((4, 1), self.board)
-        self.assertTrue(len(positions) == 2)
-        self.assertListEqual(positions, [(4, 2), (4, 3)])
+    def test_nonblocked(self):
+        TestPiece = pieces.Piece(pieces.TypeKnight, False)
+        self.board_manager.initPiece(self.board, TestPiece, (0, 0))
 
-    def test_King_moves(self):
-        TestPiece = pieces.Piece(pieces.TypeKing, False, 'WKing')
-        testPos = (4, 4)
-        self.board_manager.initPiece(self.board, TestPiece, testPos)
+        O1 = pieces.Piece(pieces.TypePawn, False)
+        self.board_manager.initPiece(self.board, O1, (1, 0))
+        O2 = pieces.Piece(pieces.TypePawn, False)
+        self.board_manager.initPiece(self.board, O2, (1, 1))
+        O3 = pieces.Piece(pieces.TypePawn, False)
+        self.board_manager.initPiece(self.board, O3, (0, 1))
 
-        # other piece, same color
-        Obstacle = pieces.Piece(pieces.TypePawn, False, 'WP1')
-        obstaclePos = (4, 5)
-        self.board_manager.initPiece(self.board, Obstacle, obstaclePos)
-
-        positions = TestPiece.getMoves(testPos, self.board)
-        self.assertNotIn(obstaclePos, positions)
-
-        # other piece, different color
-        Obstacle.is_black = True
-        positions = TestPiece.getMoves(testPos, self.board)
-        self.assertIn(obstaclePos, positions)
+        movelists = TestPiece.getMoves(self.board)
+        self.assertEqual(len(movelists), 2)
 
 
 class GameTests(unittest.TestCase):
@@ -224,24 +362,26 @@ class GameTests(unittest.TestCase):
 
         # http://en.wikibooks.org/wiki/Chess/Sample_chess_game
         # w pawn
-        self.game.move((4, 1), (4, 3))
+        self.game.move(pieces.PieceMove(((4, 1), (4, 3))))
         # b pawn
-        self.game.move((4, 6), (4, 4))
+        self.game.move(pieces.PieceMove(((4, 6), (4, 4))))
         # w bishop
-        self.game.move((6, 0), (5, 2))
+        self.game.move(pieces.PieceMove(((6, 0), (5, 2))))
         # b pawn
-        self.game.move((5, 6), (5, 5))
+        self.game.move(pieces.PieceMove(((5, 6), (5, 5))))
         # w knight captures b pawn
-        capture = self.game.move((5, 2), (4, 4))
-        self.assertIs(capture.type, pieces.TypePawn)
-        self.assertTrue(capture.is_black)
+        captures = self.game.move(pieces.PieceMove(((5, 2), (4, 4))))
+        self.assertEqual(len(captures), 1)
+        self.assertIs(captures[0].type, pieces.TypePawn)
+        self.assertTrue(captures[0].is_black)
         self.assertEqual(len(self.game.white_captures), 1)
         # b pawn captures white bishop
-        capture = self.game.move((5, 5), (4, 4))
-        self.assertIs(capture.type, pieces.TypeKnight)
-        self.assertFalse(capture.is_black)
+        captures = self.game.move(pieces.PieceMove(((5, 5), (4, 4))))
+        self.assertEqual(len(captures), 1)
+        self.assertIs(captures[0].type, pieces.TypeKnight)
+        self.assertFalse(captures[0].is_black)
         self.assertEqual(len(self.game.black_captures), 1)
         # w queen - check!
-        self.game.move((3, 0), (7, 4))
+        self.game.move(pieces.PieceMove(((3, 0), (7, 4))))
 
         # TODO: checks, checkmates

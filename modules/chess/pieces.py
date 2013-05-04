@@ -2,6 +2,29 @@
 import operator
 
 
+class PieceMove(object):
+    """Piece move object
+    One move can be 1 or 2 piece moves (castling) + one transformation (pawn at the end of the board)
+    Move positions are absolute
+    """
+    def __init__(self, *vargs):
+        # move = ((from_x, from_y), (to_x, to_y))
+        if vargs:
+            self.moves = vargs
+        else:
+            self.moves = []
+
+        # fromat: tuple - (piece, type)
+        # params:
+        #   piece: instance of Piece
+        #   type: TypeQueen, TypeRook ...
+        self.transformation = None
+
+    def rotate(self):
+        """Transforms coordinates to other player"""
+        self.moves = map(lambda m: ((7-m[0][0], 7-m[0][1]), (7-m[1][0], 7-m[1][1])), self.moves)
+
+
 class Piece(object):
     """Base piece class"""
     def __init__(self, type, is_black, id=None):
@@ -13,9 +36,16 @@ class Piece(object):
         self.moves_count = 0
         self.position = None
 
-    def getMoves(self, current_pos, board):
-        """Returns available moves offsets"""
-        return self.type.getMoves(self, current_pos, board)
+    def getMoves(self, board):
+        """Returns available moves offsets
+        Returned moves are absolute
+        """
+        if self.is_black:
+            moves = self.type.getMoves(self, (7 - self.position[0], 7 - self.position[1]), board.squares_reversed)
+            map(lambda m: m.rotate(), moves)
+            return moves
+        else:
+            return self.type.getMoves(self, self.position, board.squares)
 
     def __eq__(self, other):
         return self.id == other.id and self.type == other.type and self.is_black == other.is_black
@@ -25,105 +55,158 @@ class Piece(object):
         name += ' ' + self.id + ' (' + str(self.moves_count) + ' moves)'
         return name
 
-    @staticmethod
-    def add_move_to_pos(piece, move, pos):
-        """Adds absolute move coordinates to given position"""
-        # for black move is reversed
-        if piece.is_black:
-            move = (-move[0], -move[1])
-        return tuple(map(operator.add, move, pos))
-
-    @staticmethod
-    def pos_on_board(pos, board):
-        """Checks if position range is valid"""
-        return pos[0] >= 0 and pos[0] < len(board.squares) and pos[1] >= 0 and pos[1] < len(board.squares[pos[0]])
-
-    @staticmethod
-    def map_abs_moves_to_board(piece, position, moves, board):
-        """Maps absolute moves to board positions"""
-        def filter_obstacles(piece, position, board):
-            square = board.squares[position[0]][position[1]]
-            return square.piece is None or square.piece.is_black != piece.is_black
-
-        positions = map(lambda m: Piece.add_move_to_pos(piece, m, position), moves)
-        positions = filter(lambda p: Piece.pos_on_board(p, board), positions)
-        positions = filter(lambda p: filter_obstacles(piece, p, board), positions)
-        return positions
-
 
 class TypeKing(object):
     """King"""
     @staticmethod
-    def getMoves(piece, current_pos, board):
+    def getMoves(piece, position, squares):
         """One square in each direction"""
-        moves = [(x, y) for x in range(-1, 2) for y in range(-1, 2) if x != 0 or y != 0]
-        return Piece.map_abs_moves_to_board(piece, current_pos, moves, board)
+        position_list = []
+        for i in range(-1, 2):
+            for j in range(-1, 2):
+                if i == j == 0:
+                    continue
 
+                x, y = position[0]+i, position[1]+j
+                if max(x, y) > 7 or min(x, y) < 0:
+                    continue
 
-class TypeQueen(object):
-    """Queen"""
-    @staticmethod
-    def getMoves(piece, current_pos, board):
-        """One+ square in each direction"""
-        moves = [(x, y) for x in range(-7, 8) for y in range(-7, 8) if (x != 0 or y != 0) and (abs(x) == abs(y) or not all((x, y)))]
-        return Piece.map_abs_moves_to_board(piece, current_pos, moves, board)
+                o = squares[x][y].piece
+                if o and o.is_black != piece.is_black:
+                    position_list.append((x, y))
+                elif not o:
+                    position_list.append((x, y))
+
+        return [PieceMove((position, p)) for p in position_list]
 
 
 class TypeBishop(object):
     """Bishop"""
     @staticmethod
-    def getMoves(piece, current_pos, board):
+    def getMoves(piece, position, squares):
         """One+ square in each diagonal direction"""
-        moves = [(x, y) for x in range(-7, 8) for y in range(-7, 8) if x != 0 and y != 0 and abs(x) == abs(y)]
-        return Piece.map_abs_moves_to_board(piece, current_pos, moves, board)
+        position_list = []
+        for i in range(-1, 2, 2):
+            for j in range(-1, 2, 2):
+                for d in range(1, 8):
+                    x, y = position[0]+i*d, position[1]+j*d
 
+                    if max(x, y) > 7 or min(x, y) < 0:
+                        break
 
-class TypeKnight(object):
-    """Knight"""
-    @staticmethod
-    def getMoves(piece, current_pos, board):
-        """L moves"""
-        moves = [(1, 2), (2, 1), (2, -1), (1, -2), (-1, -2), (-2, -1), (-2, 1), (-1, 2)]
-        return Piece.map_abs_moves_to_board(piece, current_pos, moves, board)
+                    o = squares[x][y].piece
+                    if o:
+                        if o.is_black == piece.is_black:
+                            break
+                        else:
+                            position_list.append((x, y))
+                            break
+
+                    position_list.append((x, y))
+
+        return [PieceMove((position, p)) for p in position_list]
 
 
 class TypeRook(object):
     """Rook"""
     @staticmethod
-    def getMoves(piece, current_pos, board):
+    def getMoves(piece, position, squares):
         """Horizontal + vertical moves"""
-        moves = [((x, 0), (-x, 0), (0, x), (0, -x)) for x in range(0, 8)]
-        moves = [item for sublist in moves for item in sublist]
-        return Piece.map_abs_moves_to_board(piece, current_pos, moves, board)
+        position_list = []
+        for i in range(4):
+            for d in range(1, 8):
+                if i == 0:
+                    x, y = position[0]+d, position[1]
+                elif i == 1:
+                    x, y = position[0]-d, position[1]
+                elif i == 2:
+                    x, y = position[0], position[1] + d
+                else:
+                    x, y = position[0], position[1]-d
+
+                if max(x, y) > 7 or min(x, y) < 0:
+                    break
+
+                o = squares[x][y].piece
+                if o:
+                    if o.is_black == piece.is_black:
+                        break
+                    else:
+                        position_list.append((x, y))
+                        break
+
+                position_list.append((x, y))
+
+        return [PieceMove((position, p)) for p in position_list]
+
+
+class TypeQueen(object):
+    """Queen"""
+    @staticmethod
+    def getMoves(piece, position, squares):
+        return TypeRook.getMoves(piece, position, squares) + TypeBishop.getMoves(piece, position, squares)
+
+
+class TypeKnight(object):
+    """Knight"""
+    @staticmethod
+    def getMoves(piece, position, squares):
+        """L moves"""
+        position_list = []
+        offsets = [(1, 2), (2, 1), (2, -1), (1, -2), (-1, -2), (-2, -1), (-2, 1), (-1, 2)]
+        for offset in offsets:
+            x, y = position[0] + offset[0], position[1] + offset[1]
+
+            if max(x, y) > 7 or min(x, y) < 0:
+                continue
+
+            o = squares[x][y].piece
+            if o:
+                if o.is_black == piece.is_black:
+                    continue
+                else:
+                    position_list.append((x, y))
+                    continue
+
+            position_list.append((x, y))
+
+        return [PieceMove((position, p)) for p in position_list]
 
 
 class TypePawn(object):
     """Pawn"""
     @staticmethod
-    def getMoves(piece, current_pos, board):
-        """1 square"""
-        moves = [(0, 1)]
+    def getMoves(piece, position, squares):
+        position_list = []
+        offsets = [(0, 1)]
         # if first move - may be 2 squares
-        if piece.moves_count == 0 and (current_pos[1] == 1 or current_pos[1] == 6):
-            moves.append((0, 2))
+        if piece.moves_count == 0 and position[1] == 1:
+            offsets.append((0, 2))
+
+        for offset in offsets:
+            x, y = position[0] + offset[0], position[1] + offset[1]
+
+            if max(x, y) > 7 or min(x, y) < 0:
+                continue
+
+            # if first offset is blocked - there are no more normal moves
+            if squares[x][y].piece:
+                break
+
+            position_list.append((x, y))
 
         # check attacks
         attacks = [(1, 1), (-1, 1)]
-        if TypePawn.checkAttack(piece, current_pos, attacks[0], board):
-            moves.append(attacks[0])
-        if TypePawn.checkAttack(piece, current_pos, attacks[1], board):
-            moves.append(attacks[1])
+        for attack in attacks:
+            x, y = position[0] + attack[0], position[1] + attack[1]
 
-        return Piece.map_abs_moves_to_board(piece, current_pos, moves, board)
+            if max(x, y) > 7 or min(x, y) < 0:
+                continue
 
-    @staticmethod
-    def checkAttack(piece, current_pos, attack_move, board):
-        attack_position = Piece.map_abs_moves_to_board(piece, current_pos, [attack_move], board)[0]
-        attacked = board.squares[attack_position[0]][attack_position[1]].piece
-        if not attacked:
-            return False
-        if attacked.is_black == piece.is_black:
-            return False
+            o = squares[x][y].piece
+            if not o or o.is_black == piece.is_black:
+                continue
 
-        return True
+            position_list.append((x, y))
 
+        return [PieceMove((position, p)) for p in position_list]

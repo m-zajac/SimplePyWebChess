@@ -9,4 +9,5 @@
 * Minimax alfabeta move generator
 * Castlings
 * Promotions
+* En passant - http://en.wikipedia.org/wiki/En_passant
 * Other generators?

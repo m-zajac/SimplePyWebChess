@@ -27,7 +27,11 @@ class Board(object):
         self.squares = [[Square(not ((i + j) % 2)) for i in range(8)] for j in range(8)]
 
         # symmetrical board, for moving black pieces
-        self.squares_reversed = [[self.squares[7-i][7-j] for i in range(8)] for j in range(8)]
+        self.squares_reversed = [[self.squares[7-j][7-i] for i in range(8)] for j in range(8)]
+
+        # kings positions
+        self.white_king_pos = None
+        self.black_king_pos = None
 
 
 class BoardManager(object):
@@ -58,29 +62,46 @@ class BoardManager(object):
 
         board.squares[pos[0]][pos[1]].piece = piece
 
+        if piece.type == pieces.TypeKing:
+            if piece.is_black:
+                board.black_king_pos = pos
+            else:
+                board.white_king_pos = pos
+
     @staticmethod
-    def movePiece(board, piece, new_position, validate=True):
-        """Moves piece. If there is capture, captured piece is returned. Otherwise None is returned"""
-        if validate and not BoardManager.onBoard(new_position):
-            raise ValueError('Position out of board!')
+    def move(board, move_object):
+        """Moves piece. Returns captured pieces."""
+        captured_pieces = []
+        for move in move_object.moves:
+            start_pos = move[0]
+            end_pos = move[1]
 
-        # capture?
-        captured_piece = board.squares[new_position[0]][new_position[1]].piece
-        if captured_piece:
-            if captured_piece.is_black == piece.is_black:
-                # same color, invalid move!
-                raise ValueError('Square already occupied!')
+            piece = board.squares[start_pos[0]][start_pos[1]].piece
+            if not piece:
+                raise ValueError('Invalid move position!')
 
-            captured_piece.position = None
+            captured_piece = board.squares[end_pos[0]][end_pos[1]].piece
+            if captured_piece:
+                if captured_piece.is_black == piece.is_black:
+                    # same color, invalid move!
+                    raise ValueError('Invalid move, square occupied!')
 
-        # move
-        old_pos = piece.position
-        board.squares[old_pos[0]][old_pos[1]].piece = None
-        board.squares[new_position[0]][new_position[1]].piece = piece
-        piece.position = new_position
-        piece.moves_count += 1
+                captured_piece.position = None
+                captured_pieces.append(captured_piece)
 
-        return captured_piece
+            # move
+            board.squares[start_pos[0]][start_pos[1]].piece = None
+            board.squares[end_pos[0]][end_pos[1]].piece = piece
+            piece.position = end_pos
+            piece.moves_count += 1
+
+            if piece.type == pieces.TypeKing:
+                if piece.is_black:
+                    board.black_king_pos = pos
+                else:
+                    board.white_king_pos = pos
+
+        return captured_pieces
 
     @staticmethod
     def removePiece(board, piece):

@@ -63,24 +63,31 @@ class Game(object):
 
         return self
 
-    def move(self, pos_from=None, pos_to=None):
-        """Makes move. Returns captured piece, if any"""
-        if not pos_to:
+    def move(self, move=None):
+        """Validates move and executes it. Returns captured pieces."""
+        if not move:
             # empty destination, run move generator
-            pos_from, pos_to = self.move_generator.move(self.board, pos_from)
+            move = self.move_generator.move(self.board)
 
-        piece = self.board.squares[pos_from[0]][pos_from[1]].piece
-        if not piece:
-            raise ValueError('Invalid start position')
-        if piece.is_black != self.black_moves:
-            raise ValueError('Invaid player')
+        for move_data in move.moves:
+            piece = self.board.squares[move_data[0][0]][move_data[0][1]].piece
+            if not piece:
+                raise ValueError('Invalid start position')
+            if piece.is_black != self.black_moves:
+                raise ValueError('Invaid player')
 
-        valid_destinations = piece.getMoves(pos_from, self.board)
-        if not pos_to in valid_destinations:
-            raise ValueError('Invalid move destination')
+            valid_moves = piece.getMoves(self.board)
 
-        capture = self.board_manager.movePiece(self.board, piece, pos_to)
-        if capture:
+            valid_destinations = []
+            for valid_move in valid_moves:
+                for m in valid_move.moves:
+                    valid_destinations.append(m[1])
+
+            if not (move_data[1][0], move_data[1][1]) in valid_destinations:
+                raise ValueError('Invalid move destination')
+
+        captures = self.board_manager.move(self.board, move)
+        for capture in captures:
             if capture.is_black:
                 self.white_captures.append(capture)
             else:
@@ -88,4 +95,4 @@ class Game(object):
 
         self.black_moves = not self.black_moves
 
-        return capture
+        return captures
