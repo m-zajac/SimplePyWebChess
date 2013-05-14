@@ -1,4 +1,12 @@
 
+var Pieces = Backbone.Collection.extend({
+    reset_moves: function(){
+        _.each(this.models, function(m){
+            m.set('moves', []);
+        });
+    }
+});
+
 var Piece = Backbone.Model.extend({
     image_prefix: '/chess/static/img',
     image_ext: 'png',
@@ -10,6 +18,22 @@ var Piece = Backbone.Model.extend({
 
     getImage: function() {
         return this.image_prefix + '/' + this.image + (this.get('is_black') ? 'B' : '') + '.' + this.image_ext;
+    },
+
+    addMove: function(move) {
+        var moves = this.get('moves');
+        moves.push(move);
+    },
+
+    canMoveTo: function(x, y) {
+        var moves = this.get('moves');
+        for (i in moves) {
+            var m = moves[i]
+            if (m[0] == x && m[1] == y) {
+                return true
+            }
+        }
+        return false;
     }
 });
 

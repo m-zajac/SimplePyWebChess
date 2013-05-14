@@ -1,6 +1,5 @@
 """Board module"""
 import pieces
-import json
 
 
 class Square(object):
@@ -123,9 +122,27 @@ class BoardManager(object):
         return True
 
     @staticmethod
-    def serialize(board):
+    def serializePiece(piece):
         reverse_types_dict = {v: k for k, v in BoardManager.types_dict.items()}
 
+        return {
+            'id': piece.id,
+            't':  reverse_types_dict[piece.type],
+            'p':  piece.position,
+            'm':  piece.moves_count,
+            'b':  piece.is_black
+        }
+
+    @staticmethod
+    def deserializePiece(piecedata):
+        ptype = BoardManager.types_dict[piecedata['t']]
+        p = pieces.Piece(ptype, piecedata['b'], piecedata['id'])
+        p.moves_count = piecedata['m']
+        p.position = tuple(piecedata['p'])
+        return p
+
+    @staticmethod
+    def serialize(board):
         pieces = []
         for row in board.squares:
             for square in row:
@@ -135,23 +152,14 @@ class BoardManager(object):
 
         result = {}
         for p in pieces:
-            result[p.id] = {
-                't': reverse_types_dict[p.type],
-                'p': p.position,
-                'm': p.moves_count,
-                'b': p.is_black
-            }
+            result[p.id] = BoardManager.serializePiece(p)
 
-        return json.dumps(result, separators=(',', ':'))
+        return result
 
     @staticmethod
     def deserialize(board, board_manager, data):
-        data = json.loads(data)
-
         board.__init__()
 
         for id, piecedata in data.iteritems():
-            ptype = BoardManager.types_dict[piecedata['t']]
-            p = pieces.Piece(ptype, piecedata['b'], id)
-            p.moves_count = piecedata['m']
-            board_manager.initPiece(board, p, tuple(piecedata['p']))
+            p = BoardManager.deserializePiece(piecedata)
+            board_manager.initPiece(board, p, p.position)

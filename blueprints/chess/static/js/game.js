@@ -13,7 +13,7 @@
      * Game object. Manages game, communicates with backend.
      */
     Game = function(){
-        this.pieces = new Backbone.Collection;
+        this.pieces = new Pieces;
         this.urls = {
             'init': 'chess/game/init'
         }
@@ -31,7 +31,13 @@
                     hoverClass: 'square-hover',
                     accept: function(draggable){
                         // accept only in td, and if there is a piece already - only if it's other players piece
-                        return $(this).is('td') && $(this).find('.piece[data-black="' + $(draggable[0]).attr('data-black') + '"]').length == 0;
+                        //return $(this).is('td') && $(this).find('.piece[data-black="' + $(draggable[0]).attr('data-black') + '"]').length == 0;
+
+                        var x = $(this).attr('data-x');
+                        var y = $(this).attr('data-y');
+                        var id = $(draggable[0]).attr('id');
+                        var piece = g.pieces.get(id)
+                        return piece.canMoveTo(x, y);
                     },
                     drop: function(event, ui) {
                         var dragged_piece_id = ui.draggable.first().attr('id');
@@ -62,7 +68,7 @@
          * Initialize pieces collection
          */
         initPieces: function() {
-            this.pieces = new Backbone.Collection;
+            this.pieces = new Pieces;
             return this;
         },
 
@@ -78,8 +84,8 @@
                 blacks_capture_cont = $('.game .black_captures');
 
                 // create pieces from data
-                for (id in board_data) {
-                    piecedata = board_data[id];
+                _.each(board_data.board, function(piecedata){
+                    id = piecedata.id;
                     piece = g.pieces.get(id);
                     if (!piece) {
                         piece = new types_dict[piecedata['t']];
@@ -98,7 +104,17 @@
 
                     piece.set('position', piecedata['p']);
                     piece.set('moves_count', piecedata['m']);
-                }
+                });
+
+                // moves
+                g.pieces.reset_moves();
+                _.each(board_data.moves, function(move_data){
+                    id = move_data.pid
+                    piece = g.pieces.get(id)
+                    piece.addMove(move_data.to)
+                });
+
+                console.log(g.pieces)
             });
 
             return this;

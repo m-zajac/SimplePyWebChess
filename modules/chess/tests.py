@@ -1,6 +1,7 @@
 """Chess tests"""
 import unittest
 import operator
+import json
 import board
 import pieces
 import game
@@ -303,6 +304,41 @@ class KnightTests(unittest.TestCase):
         self.assertEqual(len(movelists), 2)
 
 
+class KingSafetyTests(unittest.TestCase):
+    """King safety testing class"""
+    def setUp(self):
+        self.board = board.Board()
+        self.board_manager = board.BoardManager
+
+    def test_1(self):
+        """White Pawn can't move"""
+        WK = pieces.Piece(pieces.TypeKing, False)
+        self.board_manager.initPiece(self.board, WK, (0, 0))
+
+        WP1 = pieces.Piece(pieces.TypePawn, False)
+        self.board_manager.initPiece(self.board, WP1, (1, 1))
+
+        BQ = pieces.Piece(pieces.TypeQueen, True)
+        self.board_manager.initPiece(self.board, BQ, (7, 7))
+
+        movelists = WP1.getMoves(self.board)
+        self.assertEqual(len(movelists), 0)
+
+    def test_2(self):
+        """White queen has to cover the king - only one move available"""
+        WK = pieces.Piece(pieces.TypeKing, False)
+        self.board_manager.initPiece(self.board, WK, (0, 0))
+
+        WQ = pieces.Piece(pieces.TypeQueen, False)
+        self.board_manager.initPiece(self.board, WQ, (1, 0))
+
+        BQ = pieces.Piece(pieces.TypeQueen, True)
+        self.board_manager.initPiece(self.board, BQ, (7, 7))
+
+        movelists = WQ.getMoves(self.board)
+        self.assertEqual(len(movelists), 1)
+
+
 class GameTests(unittest.TestCase):
     """Game testing class"""
     def setUp(self):
@@ -351,9 +387,11 @@ class GameTests(unittest.TestCase):
         self.game.init_new()
 
         serialized = self.board_manager.serialize(self.board)
+        serialized = json.dumps(serialized, separators=(',', ':'))
 
+        data = json.loads(serialized)
         newboard = board.Board()
-        self.board_manager.deserialize(newboard, self.board_manager, serialized)
+        self.board_manager.deserialize(newboard, self.board_manager, data)
 
         self.assertEqual(newboard.squares, self.board.squares)
 

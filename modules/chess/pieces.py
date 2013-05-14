@@ -1,5 +1,4 @@
 """Pieces module"""
-import operator
 
 
 class PieceMove(object):
@@ -14,7 +13,7 @@ class PieceMove(object):
         else:
             self.moves = []
 
-        # fromat: tuple - (piece, type)
+        # format: tuple - (piece, type)
         # params:
         #   piece: instance of Piece
         #   type: TypeQueen, TypeRook ...
@@ -43,9 +42,71 @@ class Piece(object):
         if self.is_black:
             moves = self.type.getMoves(self, (7 - self.position[0], 7 - self.position[1]), board.squares_reversed)
             map(lambda m: m.rotate(), moves)
-            return moves
         else:
-            return self.type.getMoves(self, self.position, board.squares)
+            moves = self.type.getMoves(self, self.position, board.squares)
+
+        # filter by kings safety
+        moves = filter(lambda m: Piece.checkKingSafeAfterMove(m, board), moves)
+        return moves
+
+    @staticmethod
+    def checkKingSafeAfterMove(move, board):
+        # init threat data
+        if not hasattr(Piece, 'king_threats_diagonal'):
+            Piece.king_threats_diagonal = set([TypeQueen, TypeBishop])
+            Piece.king_threats_orthogonal = set([TypeRook])
+
+        start_pos = move.moves[0][0]
+        end_pos = move.moves[0][1]
+        piece = board.squares[start_pos[0]][start_pos[1]].piece
+
+        # do not check for kings move
+        if piece.type == TypeKing:
+            return True
+
+        # init king color and position
+        if piece.is_black:
+            kingblack = True
+            kingpos = board.black_king_pos
+        else:
+            kingblack = False
+            kingpos = board.white_king_pos
+
+        # no king on board
+        if kingpos is None:
+            return True
+
+        # check diagonals + orthogonals
+        for i in range(-1, 2):
+            for j in range(-1, 2):
+                for d in range(1, 8):
+                    x, y = kingpos[0]+i*d, kingpos[1]+j*d
+
+                    if max(x, y) > 7 or min(x, y) < 0:
+                        break
+
+                    # if it's end position of move, this direction is safe
+                    if x == end_pos[0] and y == end_pos[1]:
+                        break
+
+                    # if it's start position of move, skip this square
+                    if x == start_pos[0] and y == start_pos[1]:
+                        continue
+
+                    o = board.squares[x][y].piece
+                    if o:
+                        if o.is_black == kingblack:
+                            # friendly piece, no threat from this direction
+                            break
+                        elif o.type in Piece.king_threats_diagonal and abs(i) == abs(j):
+                            return False
+                        elif o.type in Piece.king_threats_orthogonal and abs(i) != abs(j):
+                            return False
+                        else:
+                            # non threatening foe
+                            break
+
+        return True
 
     def __eq__(self, other):
         return self.id == other.id and self.type == other.type and self.is_black == other.is_black

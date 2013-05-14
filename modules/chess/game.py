@@ -96,3 +96,48 @@ class Game(object):
         self.black_moves = not self.black_moves
 
         return captures
+
+    def getAllMoves(self):
+        """Returns all available moves for current player"""
+        moves = []
+        for row in self.board.squares:
+            for square in row:
+                if square.piece:
+                    p = square.piece
+                    if p.is_black == self.black_moves:
+                        for m in p.getMoves(self.board):
+                            moves.append(m)
+
+        return moves
+
+    def serialize(self):
+        black_captures_data = []
+        white_captures_data = []
+
+        for p in self.black_captures:
+            black_captures_data.append(self.board_manager.serializePiece(p))
+
+        for p in self.white_captures:
+            white_captures_data.append(self.board_manager.serializePiece(p))
+
+        data = {
+            'board':            self.board_manager.serialize(self.board),
+            'black_moves':      self.black_moves,
+            'black_captures':   black_captures_data,
+            'white_captures':   white_captures_data
+        }
+
+        return data
+
+    def deserialize(self, game_data):
+        self.board_manager.deserialize(self.board, game_data['board']),
+
+        self.black_moves = game_data['black_moves']
+
+        self.black_captures = []
+        for p in game_data['black_captures']:
+            self.black_captures.append(self.board_manager.deserializePiece(p))
+
+        self.white_captures = []
+        for p in game_data['white_captures']:
+            self.white_captures.append(self.board_manager.deserializePiece(p))
