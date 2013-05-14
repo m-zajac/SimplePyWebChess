@@ -18,6 +18,11 @@ class Game(object):
 
         self.move_generator = move_generator
 
+        # pieces in game
+        self.white_pieces = []
+        self.black_pieces = []
+
+        # captures
         self.white_captures = []
         self.black_captures = []
 
@@ -54,12 +59,14 @@ class Game(object):
         white_pieces = make_piece_set(False, 'W')
         for pos, piece in white_pieces.iteritems():
             self.board_manager.initPiece(self.board, piece, pos, False)
+            self.white_pieces.append(piece)
 
         black_pieces = make_piece_set(True, 'B')
         for pos, piece in black_pieces.iteritems():
             # symetrical
             pos = (7 - pos[0], 7 - pos[1])
             self.board_manager.initPiece(self.board, piece, pos, False)
+            self.black_pieces.append(piece)
 
         return self
 
@@ -67,7 +74,7 @@ class Game(object):
         """Validates move and executes it. Returns captured pieces."""
         if not move:
             # empty destination, run move generator
-            move = self.move_generator.move(self.board)
+            move = self.move_generator.move(self)
 
         for move_data in move.moves:
             piece = self.board.squares[move_data[0][0]][move_data[0][1]].piece
@@ -90,8 +97,10 @@ class Game(object):
         for capture in captures:
             if capture.is_black:
                 self.white_captures.append(capture)
+                self.black_pieces.remove(capture)
             else:
                 self.black_captures.append(capture)
+                self.white_pieces.remove(capture)
 
         self.black_moves = not self.black_moves
 
@@ -141,3 +150,17 @@ class Game(object):
         self.white_captures = []
         for p in game_data['white_captures']:
             self.white_captures.append(self.board_manager.deserializePiece(p))
+
+        self.white_pieces = []
+        self.black_pieces = []
+
+        for row in self.board.squares:
+            for square in row:
+                piece = square.piece
+                if not piece:
+                    continue
+
+                if piece.is_black:
+                    self.black_pieces.append(piece)
+                else:
+                    self.white_pieces.append(piece)

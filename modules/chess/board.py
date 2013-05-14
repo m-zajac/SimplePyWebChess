@@ -19,7 +19,7 @@ class Square(object):
 
 class Board(object):
     """Board class
-    This object will probably be copied, so it's just data. Methods for managing board are in BoardManager class
+    This object will probably be frequently copied, so it's just data. Methods for managing board are in BoardManager class
     """
     def __init__(self):
         """Initialize board"""
@@ -96,9 +96,9 @@ class BoardManager(object):
 
             if piece.type == pieces.TypeKing:
                 if piece.is_black:
-                    board.black_king_pos = pos
+                    board.black_king_pos = piece.position
                 else:
-                    board.white_king_pos = pos
+                    board.white_king_pos = piece.position
 
         return captured_pieces
 
@@ -138,7 +138,8 @@ class BoardManager(object):
         ptype = BoardManager.types_dict[piecedata['t']]
         p = pieces.Piece(ptype, piecedata['b'], piecedata['id'])
         p.moves_count = piecedata['m']
-        p.position = tuple(piecedata['p'])
+        if piecedata['p']:
+            p.position = tuple(piecedata['p'])
         return p
 
     @staticmethod
@@ -157,9 +158,9 @@ class BoardManager(object):
         return result
 
     @staticmethod
-    def deserialize(board, board_manager, data):
+    def deserialize(board, data):
         board.__init__()
 
         for id, piecedata in data.iteritems():
             p = BoardManager.deserializePiece(piecedata)
-            board_manager.initPiece(board, p, p.position)
+            BoardManager.initPiece(board, p, p.position)

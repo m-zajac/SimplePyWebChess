@@ -391,7 +391,7 @@ class GameTests(unittest.TestCase):
 
         data = json.loads(serialized)
         newboard = board.Board()
-        self.board_manager.deserialize(newboard, self.board_manager, data)
+        self.board_manager.deserialize(newboard, data)
 
         self.assertEqual(newboard.squares, self.board.squares)
 
