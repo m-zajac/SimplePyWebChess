@@ -2,6 +2,7 @@ import json
 from flask import render_template, Response, request, abort
 from modules.chess import game, pieces
 from modules.chess.move_generators.gen_random import MoveGenerator as RandomMoveGenerator
+import modules.chess.game_factory as game_factory
 
 
 def init(blueprint):
@@ -10,35 +11,58 @@ def init(blueprint):
     def index():
         return render_template('chess/index.html')
 
-    @blueprint.route('/game/init')
+    @blueprint.route('/game/init', methods=['POST'])
     def init():
-        chessgame = game.Game()
+        chessgame = game.Game(None, RandomMoveGenerator())
         chessgame.init_new()
 
-        return Response(response=prepare_response(chessgame),
-                        status=200,
-                        mimetype="application/json")
+        return prepare_game_response(chessgame)
 
     @blueprint.route('/game/move', methods=['POST'])
     def move():
-        data = json.loads(request.form.items()[0][0])
-        if not 'game_data' in data or not 'move' in data:
-            abort(400)
+        data = parse_game_request()
 
+        chessgame = data['game']
+
+        # move
+        if 'move' in data:
+            move = pieces.PieceMove(data['move'])
+            chessgame.move(move)
+        else:
+            chessgame.move()
+
+        return prepare_game_response(chessgame)
+
+    @blueprint.route('/game/whites_check1', methods=['POST'])
+    def whites_check1():
+        _game = game_factory.make_whites_check1()
+        return prepare_game_response(_game)
+
+
+def parse_game_request(chessgame=None):
+    try:
+        data = json.loads(request.form.items()[0][0])
+    except IndexError:
+        data = None
+
+    if not chessgame:
         chessgame = game.Game(None, RandomMoveGenerator())
+        chessgame.init_new()
+
+    if data and 'game_data' in data:
         chessgame.deserialize(data['game_data']['game'])
 
-        move = pieces.PieceMove(data['move'])
-        chessgame.move(move)
+    result = {
+        'game': chessgame,
+    }
 
-        chessgame.move()
+    if data and 'move' in data:
+        result['move'] = data['move']
 
-        return Response(response=prepare_response(chessgame),
-                        status=200,
-                        mimetype="application/json")
+    return result
 
 
-def prepare_response(chessgame):
+def prepare_game_response(chessgame):
     game_data = chessgame.serialize()
     piece_moves = chessgame.getAllMoves()
     piece_move_data = []
@@ -52,10 +76,17 @@ def prepare_response(chessgame):
             'to':  end_pos
         })
 
-    return json.dumps(
-        {
-            'game': game_data,
-            'moves': piece_move_data
-        },
-        separators=(',', ':')
+    return Response(
+        response=json.dumps(
+            {
+                'game': game_data,
+                'moves': piece_move_data,
+                'check': chessgame.board_manager.is_check(chessgame.board, chessgame.black_moves),
+                'mate': chessgame.board_manager.is_checkmate(chessgame.board, chessgame.black_moves),
+                'stalemate': chessgame.board_manager.is_stalemate(chessgame.board, chessgame.black_moves),
+            },
+            separators=(',', ':')
+        ),
+        status=200,
+        mimetype="application/json"
     )

@@ -20,6 +20,8 @@
         };
         this.game_data;
         this.black_moves = false;
+        this.white_player_human = true;
+        this.black_player_human = true;
     }
 
     Game.prototype = {
@@ -130,30 +132,60 @@
         /**
          * Initialize new game
          */
-        start: function(){
+        start: function(url){
+            if (!url) {
+                url = this.urls.init;
+            }
+
             var g = this;
-            $.getJSON(this.urls.init, function(game_data) {
-                g.setData(game_data);
-            });
+            $.post(
+                url, 
+                this._prepare_post_data(),
+                function(game_data) {
+                    g.setData(game_data);
+                }
+            );
 
             return this;
         },
 
-        move: function(position, destination){
+        move: function(position, destination) {
             var g = this;
+            var data = null;
+            if (position && destination) {
+                data = this._prepare_post_data([position, destination]);
+            } else {
+                data = this._prepare_post_data();
+            }
+
             $.post(
-                this.urls.move, 
-                JSON.stringify({
-                    game_data: this.game_data,
-                    move: [position, destination]
-                }),
+                this.urls.move,
+                data,
                 function(game_data) {
+                    console.log('res', game_data.game.black_moves);
                     g.setData(game_data);
+
+                    // computer move
+                    if (
+                        (g.black_moves && !g.black_player_human)
+                        ||
+                        (!g.black_moves && !g.white_player_human)
+                    ) {
+                        setTimeout(function(){
+                            g.move();
+                        }, 1000 );
+                    }
                 },
                 'json'
             );
-
             return this;
+        },
+
+        _prepare_post_data: function(move) {
+            return JSON.stringify({
+                game_data: this.game_data,
+                move: move
+            });
         }
     }
 })(jQuery)

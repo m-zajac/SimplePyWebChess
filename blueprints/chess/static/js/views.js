@@ -61,7 +61,7 @@ var PieceView = Backbone.View.extend({
         if (!capture && curr_parent[0] != this.capture_cont[0]) {
             var start_pos = this.$el.offset();
             var dest_pos = $(dest).offset();
-            console.log(this.model.get('is_black'), start_pos, dest_pos, curr_parent)
+            
             this.$el.css({
                 position: 'absolute',
                 left: this.$el.offset().left,

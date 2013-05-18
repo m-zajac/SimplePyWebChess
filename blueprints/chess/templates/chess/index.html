@@ -29,8 +29,52 @@
                 <div class="options">
                     <h2>Game options:</h2>
 
-                    <div>
-                        <input type="button" id="startgame" class="btn btn-success" value="Start new game" />
+                    <div class="row-fluid">
+                        <div class="span6">
+                            <h4>White player</h4>
+
+                            <div>
+                                <label class="radio">
+                                    <input type="radio" name="player_white_human" value="true" checked>
+                                    Human
+                                </label>
+                                <label class="radio">
+                                    <input type="radio" name="player_white_human" value="false">
+                                    Computer
+                                </label>
+                            </div>
+                        </div>
+                        <div class="span6">
+                            <h4>Black player</h4>
+
+                            <div>
+                                <label class="radio">
+                                    <input type="radio" name="player_black_human" value="true">
+                                    Human
+                                </label>
+                                <label class="radio">
+                                    <input type="radio" name="player_black_human" value="false" checked>
+                                    Computer
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row-fluid">
+                        <div class="span6 offset3">
+                            <input type="button" id="startgame" class="btn btn-success" value="Start new game" />
+                        </div>
+                    </div>
+
+                    <hr/>
+
+                    <h3>Testing</h3>
+
+                    <div class="form-inline">
+                        <select id="test_selector">
+                            <option value="chess/game/whites_check1">Whites check 1</option>
+                        </select>
+
+                        <input type="button" id="starttest" class="btn btn-info btn-small" value="Run selected test" />
                     </div>
                 </div>
 

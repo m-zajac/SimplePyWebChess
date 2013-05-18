@@ -103,6 +103,21 @@ class BoardManager(object):
         return captured_pieces
 
     @staticmethod
+    def is_check(board, black_moves):
+        """Returns true if there is a check"""
+        return False
+
+    @staticmethod
+    def is_checkmate(board, black_moves):
+        """Returns true if there is a checkmate"""
+        return False
+
+    @staticmethod
+    def is_stalemate(board, black_moves):
+        """Returns true if there is a checkmate"""
+        return False
+
+    @staticmethod
     def removePiece(board, piece):
         """Removes piece from board"""
         pos = piece.position
