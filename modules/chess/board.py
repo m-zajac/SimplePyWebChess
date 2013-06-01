@@ -57,7 +57,6 @@ class BoardManager(object):
             raise ValueError('Position out of board!')
 
         piece.position = pos
-        piece.moves_count = 0
 
         board.squares[pos[0]][pos[1]].piece = piece
 
@@ -103,21 +102,6 @@ class BoardManager(object):
         return captured_pieces
 
     @staticmethod
-    def is_check(board, black_moves):
-        """Returns true if there is a check"""
-        return False
-
-    @staticmethod
-    def is_checkmate(board, black_moves):
-        """Returns true if there is a checkmate"""
-        return False
-
-    @staticmethod
-    def is_stalemate(board, black_moves):
-        """Returns true if there is a checkmate"""
-        return False
-
-    @staticmethod
     def removePiece(board, piece):
         """Removes piece from board"""
         pos = piece.position
@@ -155,6 +139,7 @@ class BoardManager(object):
         p.moves_count = piecedata['m']
         if piecedata['p']:
             p.position = tuple(piecedata['p'])
+
         return p
 
     @staticmethod

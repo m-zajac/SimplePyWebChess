@@ -13,16 +13,25 @@
      * Game object. Manages game, communicates with backend.
      */
     Game = function(){
+        //Backbone events - for view
+        _.extend(this, Backbone.Events);
+
         this.pieces = new Pieces;
         this.urls = {
             'init': 'chess/game/init',
             'move': 'chess/game/move'
         };
         this.game_data;
+
+        // game state
         this.black_moves = false;
         this.white_player_human = true;
         this.black_player_human = true;
+        this.is_check = false;
+        this.is_checkmate = false;
     }
+
+    
 
     Game.prototype = {
         /**
@@ -35,9 +44,6 @@
                 $(this).droppable({
                     hoverClass: 'square-hover',
                     accept: function(draggable){
-                        // accept only in td, and if there is a piece already - only if it's other players piece
-                        //return $(this).is('td') && $(this).find('.piece[data-black="' + $(draggable[0]).attr('data-black') + '"]').length == 0;
-
                         var x = $(this).attr('data-x');
                         var y = $(this).attr('data-y');
                         var id = $(draggable[0]).attr('id');
@@ -91,12 +97,14 @@
 
             this.game_data = game_data;
             this.black_moves = game_data.game.black_moves;
+            this.is_check = game_data.game.is_check;
+            this.is_checkmate = game_data.game.is_checkmate;
 
             // create pieces from data
             _.each(game_data.game.board, this.updatePiece, this);
             _.each(game_data.game.white_captures, this.updatePiece, this);
             _.each(game_data.game.black_captures, this.updatePiece, this);
-            
+
             // moves
             this.pieces.reset_moves();
             _.each(game_data.moves, function(move_data){
@@ -104,6 +112,16 @@
                 piece = this.pieces.get(id)
                 piece.addMove(move_data.to)
             }, this);
+
+            // trigger events
+            this.trigger('update');
+
+            if (this.is_check) {
+                this.trigger('check', this.black_moves);
+            }
+            if (this.is_checkmate) {
+                this.trigger('checkmate', this.black_moves);
+            }
 
             return this;
         },
@@ -122,6 +140,7 @@
                     board: $('.game .board'),
                     capture_cont: (piece.get('is_black') ? whites_capture_cont : blacks_capture_cont)
                 });
+                piece.view = view;
                 view.render();
             }
 
@@ -162,7 +181,6 @@
                 this.urls.move,
                 data,
                 function(game_data) {
-                    console.log('res', game_data.game.black_moves);
                     g.setData(game_data);
 
                     // computer move

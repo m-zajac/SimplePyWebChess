@@ -13,9 +13,9 @@ class PieceMove(object):
         else:
             self.moves = []
 
-        # format: tuple - (piece, type)
+        # format: tuple - (position, type)
         # params:
-        #   piece: instance of Piece
+        #   position: Piece position after move
         #   type: TypeQueen, TypeRook ...
         self.transformation = None
 
@@ -46,99 +46,19 @@ class Piece(object):
             moves = self.type.getMoves(self, self.position, board.squares)
 
         # filter by kings safety
-        moves = filter(lambda m: Piece.checkKingSafeAfterMove(m, board), moves)
+        moves = filter(lambda m: TypeKing.checkSafeAfterMove(m, board), moves)
         return moves
-
-    @staticmethod
-    def checkKingSafeAfterMove(move, board):
-        # init threat data
-        if not hasattr(Piece, 'king_threats_diagonal'):
-            Piece.king_threats_diagonal = set([TypeQueen, TypeBishop])
-            Piece.king_threats_orthogonal = set([TypeRook])
-
-        start_pos = move.moves[0][0]
-        end_pos = move.moves[0][1]
-        piece = board.squares[start_pos[0]][start_pos[1]].piece
-
-        # do not check for kings move
-        if piece.type == TypeKing:
-            return True
-
-        # init king color and position
-        if piece.is_black:
-            kingblack = True
-            kingpos = board.black_king_pos
-        else:
-            kingblack = False
-            kingpos = board.white_king_pos
-
-        # no king on board
-        if kingpos is None:
-            return True
-
-        # check diagonals + orthogonals
-        for i in range(-1, 2):
-            for j in range(-1, 2):
-                for d in range(1, 8):
-                    x, y = kingpos[0]+i*d, kingpos[1]+j*d
-
-                    if max(x, y) > 7 or min(x, y) < 0:
-                        break
-
-                    # if it's end position of move, this direction is safe
-                    if x == end_pos[0] and y == end_pos[1]:
-                        break
-
-                    # if it's start position of move, skip this square
-                    if x == start_pos[0] and y == start_pos[1]:
-                        continue
-
-                    o = board.squares[x][y].piece
-                    if o:
-                        if o.is_black == kingblack:
-                            # friendly piece, no threat from this direction
-                            break
-                        elif o.type in Piece.king_threats_diagonal and abs(i) == abs(j):
-                            return False
-                        elif o.type in Piece.king_threats_orthogonal and abs(i) != abs(j):
-                            return False
-                        else:
-                            # non threatening foe
-                            break
-
-        return True
 
     def __eq__(self, other):
         return self.id == other.id and self.type == other.type and self.is_black == other.is_black
 
     def __str__(self):
         name = 'Black' if self.is_black else 'White'
-        name += ' ' + self.id + ' (' + str(self.moves_count) + ' moves)'
+        name += ' ' + str(self.id) + ' (' + str(self.moves_count) + ' moves)'
         return name
 
-
-class TypeKing(object):
-    """King"""
-    @staticmethod
-    def getMoves(piece, position, squares):
-        """One square in each direction"""
-        position_list = []
-        for i in range(-1, 2):
-            for j in range(-1, 2):
-                if i == j == 0:
-                    continue
-
-                x, y = position[0]+i, position[1]+j
-                if max(x, y) > 7 or min(x, y) < 0:
-                    continue
-
-                o = squares[x][y].piece
-                if o and o.is_black != piece.is_black:
-                    position_list.append((x, y))
-                elif not o:
-                    position_list.append((x, y))
-
-        return [PieceMove((position, p)) for p in position_list]
+    def __repr__(self):
+        return self.__str__()
 
 
 class TypeBishop(object):
@@ -250,7 +170,7 @@ class TypePawn(object):
             if max(x, y) > 7 or min(x, y) < 0:
                 continue
 
-            # if first offset is blocked - there are no more normal moves
+            # if first offset is blocked - stop
             if squares[x][y].piece:
                 break
 
@@ -271,3 +191,145 @@ class TypePawn(object):
             position_list.append((x, y))
 
         return [PieceMove((position, p)) for p in position_list]
+
+
+class TypeKing(object):
+    """King"""
+
+    threats_diagonal = set([TypeQueen, TypeBishop])
+    threats_orthogonal = set([TypeQueen, TypeRook])
+
+    @staticmethod
+    def getMoves(piece, position, squares):
+        """One square in each direction"""
+        position_list = []
+        for i in range(-1, 2):
+            for j in range(-1, 2):
+                if i == j == 0:
+                    continue
+
+                x, y = position[0]+i, position[1]+j
+                if max(x, y) > 7 or min(x, y) < 0:
+                    continue
+
+                o = squares[x][y].piece
+                if o and o.is_black != piece.is_black:
+                    position_list.append((x, y))
+                elif not o:
+                    position_list.append((x, y))
+
+        return [PieceMove((position, p)) for p in position_list]
+
+    @staticmethod
+    def checkSafe(position, squares):
+        king = squares[position[0]][position[1]].piece
+        if king.type is not TypeKing:
+            raise ValueError('Invalid king position')
+        if king.position != position:
+            raise ValueError('Invalid king position data! ' + str(position) + ' vs ' + str(king.position))
+        king_is_black = king.is_black
+
+        # check diagonals + orthogonals
+        for i in range(-1, 2):
+            for j in range(-1, 2):
+                for d in range(1, 8):
+                    x, y = position[0]+i*d, position[1]+j*d
+
+                    # stay on board
+                    if max(x, y) > 7 or min(x, y) < 0:
+                        break
+
+                    o = squares[x][y].piece
+                    if o:
+                        if o.is_black == king_is_black:
+                            # friendly piece, no threat from this direction
+                            break
+                        elif o.type in TypeKing.threats_diagonal and abs(i) == abs(j):
+                            return False
+                        elif o.type in TypeKing.threats_orthogonal and abs(i) != abs(j):
+                            return False
+                        else:
+                            # non threatening foe
+                            break
+
+        # check knights
+        knight_offsets = [(1, 2), (2, 1), (2, -1), (1, -2), (-1, -2), (-2, -1), (-2, 1), (-1, 2)]
+        for offset in knight_offsets:
+            x, y = position[0] + offset[0], position[1] + offset[1]
+
+            # stay on board
+            if max(x, y) > 7 or min(x, y) < 0:
+                continue
+
+            o = squares[x][y].piece
+            if o and o.type == TypeKnight and o.is_black != king_is_black:
+                return False
+
+        # check pawns
+        if king_is_black:
+            pawns_offsets = [(1, -1), (-1, -1)]
+        else:
+            pawns_offsets = [(1, 1), (-1, 1)]
+
+        for offset in pawns_offsets:
+            x, y = position[0] + offset[0], position[1] + offset[1]
+
+            # stay on board
+            if max(x, y) > 7 or min(x, y) < 0:
+                continue
+
+            o = squares[x][y].piece
+            if o and o.type == TypePawn and o.is_black != king_is_black:
+                return False
+
+        return True
+
+    @staticmethod
+    def checkSafeAfterMove(move, board):
+        start_pos = move.moves[0][0]
+        end_pos = move.moves[0][1]
+        piece = board.squares[start_pos[0]][start_pos[1]].piece
+
+        # init king color and position
+        if piece.type is TypeKing:
+            kingpos = end_pos
+        elif piece.is_black:
+            kingpos = board.black_king_pos
+        else:
+            kingpos = board.white_king_pos
+
+        # no king on board
+        if kingpos is None:
+            return True
+
+        # fake move
+        backup = {}
+        backup_type = piece.type
+        for m in move.moves:
+            _from = m[0]
+            _to = m[1]
+
+            #backup pieces
+            backup[(_to[0], _to[1])] = board.squares[_to[0]][_to[1]].piece
+            backup[(_from[0], _from[1])] = board.squares[_from[0]][_from[1]].piece
+
+            piece.position = _to
+            board.squares[_to[0]][_to[1]].piece = piece
+            board.squares[_from[0]][_from[1]].piece = None
+
+        if move.transformation:
+            board.squares[move.transformation[0]][move.transformation[1]].piece = move.transformation[1]
+
+        # check kings safety
+        result = TypeKing.checkSafe(kingpos, board.squares)
+
+        # revert move
+        for pos, p in backup.iteritems():
+            board.squares[pos[0]][pos[1]].piece = p
+            if p:
+                p.position = pos
+
+        piece.type = backup_type
+
+        # done
+        return result

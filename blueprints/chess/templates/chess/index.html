@@ -31,7 +31,10 @@
 
                     <div class="row-fluid">
                         <div class="span6">
-                            <h4>White player</h4>
+                            <h4>
+                                <img class="player_marker white" src="{{ url_for('chess.static', filename='img/King.png') }}"/>
+                                White player
+                            </h4>
 
                             <div>
                                 <label class="radio">
@@ -45,7 +48,10 @@
                             </div>
                         </div>
                         <div class="span6">
-                            <h4>Black player</h4>
+                            <h4>
+                                <img class="player_marker black" src="{{ url_for('chess.static', filename='img/KingB.png') }}"/>
+                                Black player
+                            </h4>
 
                             <div>
                                 <label class="radio">
@@ -72,6 +78,7 @@
                     <div class="form-inline">
                         <select id="test_selector">
                             <option value="chess/game/whites_check1">Whites check 1</option>
+                            <option value="chess/game/whites_checkmate1">Whites checkmate 1</option>
                         </select>
 
                         <input type="button" id="starttest" class="btn btn-info btn-small" value="Run selected test" />

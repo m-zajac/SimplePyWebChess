@@ -38,6 +38,11 @@ def init(blueprint):
         _game = game_factory.make_whites_check1()
         return prepare_game_response(_game)
 
+    @blueprint.route('/game/whites_checkmate1', methods=['POST'])
+    def whites_checkmate1():
+        _game = game_factory.make_whites_checkmate1()
+        return prepare_game_response(_game)
+
 
 def parse_game_request(chessgame=None):
     try:
@@ -80,10 +85,7 @@ def prepare_game_response(chessgame):
         response=json.dumps(
             {
                 'game': game_data,
-                'moves': piece_move_data,
-                'check': chessgame.board_manager.is_check(chessgame.board, chessgame.black_moves),
-                'mate': chessgame.board_manager.is_checkmate(chessgame.board, chessgame.black_moves),
-                'stalemate': chessgame.board_manager.is_stalemate(chessgame.board, chessgame.black_moves),
+                'moves': piece_move_data
             },
             separators=(',', ':')
         ),

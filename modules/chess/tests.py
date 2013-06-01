@@ -371,7 +371,7 @@ class GameTests(unittest.TestCase):
         self.assertIs(self.board.squares[4][0].piece.type, pieces.TypeKing)
         self.assertFalse(self.board.squares[4][0].piece.is_black)
 
-        self.assertIs(self.board.squares[3][7].piece.type, pieces.TypeKing)
+        self.assertIs(self.board.squares[3][7].piece.type, pieces.TypeQueen)
         self.assertTrue(self.board.squares[3][7].piece.is_black)
 
         for i in range(8):
@@ -396,30 +396,324 @@ class GameTests(unittest.TestCase):
         self.assertEqual(newboard.squares, self.board.squares)
 
     def test_game(self):
+        """http://en.wikibooks.org/wiki/Chess/Sample_chess_game"""
         self.game.init_new()
 
-        # http://en.wikibooks.org/wiki/Chess/Sample_chess_game
         # w pawn
-        self.game.move(pieces.PieceMove(((4, 1), (4, 3))))
+        self.move_and_checkafter(
+            move=pieces.PieceMove(((4, 1), (4, 3))),
+            black_moves=True,
+            is_capture=False,
+            white_capture_count=0,
+            black_capture_count=0,
+            white_king_safe=True,
+            black_king_safe=True,
+        )
         # b pawn
-        self.game.move(pieces.PieceMove(((4, 6), (4, 4))))
+        self.move_and_checkafter(
+            move=pieces.PieceMove(((4, 6), (4, 4))),
+            black_moves=False,
+            is_capture=False,
+            white_capture_count=0,
+            black_capture_count=0,
+            white_king_safe=True,
+            black_king_safe=True,
+        )
         # w bishop
-        self.game.move(pieces.PieceMove(((6, 0), (5, 2))))
+        self.move_and_checkafter(
+            move=pieces.PieceMove(((6, 0), (5, 2))),
+            black_moves=True,
+            is_capture=False,
+            white_capture_count=0,
+            black_capture_count=0,
+            white_king_safe=True,
+            black_king_safe=True,
+        )
         # b pawn
-        self.game.move(pieces.PieceMove(((5, 6), (5, 5))))
+        self.move_and_checkafter(
+            move=pieces.PieceMove(((5, 6), (5, 5))),
+            black_moves=False,
+            is_capture=False,
+            white_capture_count=0,
+            black_capture_count=0,
+            white_king_safe=True,
+            black_king_safe=True,
+        )
         # w knight captures b pawn
-        captures = self.game.move(pieces.PieceMove(((5, 2), (4, 4))))
-        self.assertEqual(len(captures), 1)
-        self.assertIs(captures[0].type, pieces.TypePawn)
-        self.assertTrue(captures[0].is_black)
-        self.assertEqual(len(self.game.white_captures), 1)
+        self.move_and_checkafter(
+            move=pieces.PieceMove(((5, 2), (4, 4))),
+            black_moves=True,
+            is_capture=True,
+            white_capture_count=1,
+            black_capture_count=0,
+            white_king_safe=True,
+            black_king_safe=True,
+        )
         # b pawn captures white bishop
-        captures = self.game.move(pieces.PieceMove(((5, 5), (4, 4))))
-        self.assertEqual(len(captures), 1)
-        self.assertIs(captures[0].type, pieces.TypeKnight)
-        self.assertFalse(captures[0].is_black)
-        self.assertEqual(len(self.game.black_captures), 1)
+        self.move_and_checkafter(
+            move=pieces.PieceMove(((5, 5), (4, 4))),
+            black_moves=False,
+            is_capture=True,
+            white_capture_count=1,
+            black_capture_count=1,
+            white_king_safe=True,
+            black_king_safe=True,
+        )
         # w queen - check!
-        self.game.move(pieces.PieceMove(((3, 0), (7, 4))))
+        self.move_and_checkafter(
+            move=pieces.PieceMove(((3, 0), (7, 4))),
+            black_moves=True,
+            is_capture=False,
+            white_capture_count=1,
+            black_capture_count=1,
+            white_king_safe=True,
+            black_king_safe=False,
+        )
+        # b king
+        self.move_and_checkafter(
+            move=pieces.PieceMove(((4, 7), (4, 6))),
+            black_moves=False,
+            is_capture=False,
+            white_capture_count=1,
+            black_capture_count=1,
+            white_king_safe=True,
+            black_king_safe=True,
+        )
+        # w queen - capture & check!
+        self.move_and_checkafter(
+            move=pieces.PieceMove(((7, 4), (4, 4))),
+            black_moves=True,
+            is_capture=True,
+            white_capture_count=2,
+            black_capture_count=1,
+            white_king_safe=True,
+            black_king_safe=False,
+        )
+        # b king
+        self.move_and_checkafter(
+            move=pieces.PieceMove(((4, 6), (5, 6))),
+            black_moves=False,
+            is_capture=False,
+            white_capture_count=2,
+            black_capture_count=1,
+            white_king_safe=True,
+            black_king_safe=True,
+        )
+        # w bishop - check
+        self.move_and_checkafter(
+            move=pieces.PieceMove(((5, 0), (2, 3))),
+            black_moves=True,
+            is_capture=False,
+            white_capture_count=2,
+            black_capture_count=1,
+            white_king_safe=True,
+            black_king_safe=False,
+        )
+        # b pawn
+        self.move_and_checkafter(
+            move=pieces.PieceMove(((3, 6), (3, 4))),
+            black_moves=False,
+            is_capture=False,
+            white_capture_count=2,
+            black_capture_count=1,
+            white_king_safe=True,
+            black_king_safe=True,
+        )
+        # w bishop - capture & check
+        self.move_and_checkafter(
+            move=pieces.PieceMove(((2, 3), (3, 4))),
+            black_moves=True,
+            is_capture=True,
+            white_capture_count=3,
+            black_capture_count=1,
+            white_king_safe=True,
+            black_king_safe=False,
+        )
+        # b king
+        self.move_and_checkafter(
+            move=pieces.PieceMove(((5, 6), (6, 5))),
+            black_moves=False,
+            is_capture=False,
+            white_capture_count=3,
+            black_capture_count=1,
+            white_king_safe=True,
+            black_king_safe=True,
+        )
+        # w pawn
+        self.move_and_checkafter(
+            move=pieces.PieceMove(((7, 1), (7, 3))),
+            black_moves=True,
+            is_capture=False,
+            white_capture_count=3,
+            black_capture_count=1,
+            white_king_safe=True,
+            black_king_safe=True,
+        )
+        # b pawn
+        self.move_and_checkafter(
+            move=pieces.PieceMove(((7, 6), (7, 4))),
+            black_moves=False,
+            is_capture=False,
+            white_capture_count=3,
+            black_capture_count=1,
+            white_king_safe=True,
+            black_king_safe=True,
+        )
+        # w bishop - capture pawn
+        self.move_and_checkafter(
+            move=pieces.PieceMove(((3, 4), (1, 6))),
+            black_moves=True,
+            is_capture=True,
+            white_capture_count=4,
+            black_capture_count=1,
+            white_king_safe=True,
+            black_king_safe=True,
+        )
+        # b bishop
+        self.move_and_checkafter(
+            move=pieces.PieceMove(((2, 7), (1, 6))),
+            black_moves=False,
+            is_capture=True,
+            white_capture_count=4,
+            black_capture_count=2,
+            white_king_safe=True,
+            black_king_safe=True,
+        )
+        # w queen
+        self.move_and_checkafter(
+            move=pieces.PieceMove(((4, 4), (5, 4))),
+            black_moves=True,
+            is_capture=False,
+            white_capture_count=4,
+            black_capture_count=2,
+            white_king_safe=True,
+            black_king_safe=False,
+        )
+        # b king
+        self.move_and_checkafter(
+            move=pieces.PieceMove(((6, 5), (7, 5))),
+            black_moves=False,
+            is_capture=False,
+            white_capture_count=4,
+            black_capture_count=2,
+            white_king_safe=True,
+            black_king_safe=True,
+            black_king_pos=(7, 5),
+            white_king_pos=(4, 0),
+        )
+        # w pawn
+        self.move_and_checkafter(
+            move=pieces.PieceMove(((3, 1), (3, 3))),
+            black_moves=True,
+            is_capture=False,
+            white_capture_count=4,
+            black_capture_count=2,
+            white_king_safe=True,
+            black_king_safe=False,
+        )
+        # b pawn
+        self.move_and_checkafter(
+            move=pieces.PieceMove(((6, 6), (6, 4))),
+            black_moves=False,
+            is_capture=False,
+            white_capture_count=4,
+            black_capture_count=2,
+            white_king_safe=True,
+            black_king_safe=True,
+        )
+        # w queen
+        self.move_and_checkafter(
+            move=pieces.PieceMove(((5, 4), (5, 6))),
+            black_moves=True,
+            is_capture=False,
+            white_capture_count=4,
+            black_capture_count=2,
+            white_king_safe=True,
+            black_king_safe=True,
+        )
+        # b queen
+        self.move_and_checkafter(
+            move=pieces.PieceMove(((3, 7), (4, 6))),
+            black_moves=False,
+            is_capture=False,
+            white_capture_count=4,
+            black_capture_count=2,
+            white_king_safe=True,
+            black_king_safe=True,
+            black_king_pos=(7, 5),
+            white_king_pos=(4, 0),
+        )
+        # w pawn
+        self.move_and_checkafter(
+            move=pieces.PieceMove(((7, 3), (6, 4))),
+            black_moves=True,
+            is_capture=True,
+            white_capture_count=5,
+            black_capture_count=2,
+            white_king_safe=True,
+            black_king_safe=False,
+            black_king_pos=(7, 5),
+            white_king_pos=(4, 0),
+        )
+        # b queen
+        self.move_and_checkafter(
+            move=pieces.PieceMove(((4, 6), (6, 4))),
+            black_moves=False,
+            is_capture=True,
+            white_capture_count=5,
+            black_capture_count=3,
+            white_king_safe=True,
+            black_king_safe=True,
+            black_king_pos=(7, 5),
+            white_king_pos=(4, 0),
+        )
+        # w rook - chekcmate
+        self.move_and_checkafter(
+            move=pieces.PieceMove(((7, 0), (7, 4))),
+            black_moves=True,
+            is_capture=True,
+            white_capture_count=6,
+            black_capture_count=3,
+            white_king_safe=True,
+            black_king_safe=False,
+            black_king_pos=(7, 5),
+            white_king_pos=(4, 0),
+            checkmate=True
+        )
 
-        # TODO: checks, checkmates
+    def move_and_checkafter(
+        self,
+        move,
+        black_moves,
+        is_capture,
+        white_capture_count,
+        black_capture_count,
+        white_king_safe=True,
+        black_king_safe=True,
+        white_king_pos=None,
+        black_king_pos=None,
+        checkmate=None
+    ):
+        captures = self.game.move(move)
+        self.assertEqual(len(captures) > 0, is_capture)
+        if len(captures) > 0:
+            self.assertEqual(captures[0].is_black, black_moves)
+
+        self.assertEqual(len(self.game.white_captures), white_capture_count)
+        self.assertEqual(len(self.game.black_captures), black_capture_count)
+
+        self.assertEqual(pieces.TypeKing.checkSafe(self.game.board.white_king_pos, self.game.board.squares), white_king_safe)
+        self.assertEqual(pieces.TypeKing.checkSafe(self.game.board.black_king_pos, self.game.board.squares), black_king_safe)
+
+        self.assertEqual(black_moves, self.game.black_moves)
+
+        if white_king_pos:
+            self.assertEqual(self.game.board.white_king_pos, white_king_pos)
+            self.assertIs(self.game.board.squares[white_king_pos[0]][white_king_pos[1]].piece.type, pieces.TypeKing)
+            self.assertEqual(self.game.board.squares[white_king_pos[0]][white_king_pos[1]].piece.position, white_king_pos)
+        if black_king_pos:
+            self.assertEqual(self.game.board.black_king_pos, black_king_pos)
+            self.assertIs(self.game.board.squares[black_king_pos[0]][black_king_pos[1]].piece.type, pieces.TypeKing)
+            self.assertEqual(self.game.board.squares[black_king_pos[0]][black_king_pos[1]].piece.position, black_king_pos)
+        if checkmate:
+            self.assertEqual(len(self.game.getAllMoves()), 0)

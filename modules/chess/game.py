@@ -8,9 +8,6 @@ class Game(object):
     def __init__(self, gameboard=None, move_generator=None):
         super(Game, self).__init__()
 
-        # whites turn first
-        self.black_moves = False
-
         self.board_manager = board.BoardManager
         self.board = gameboard
         if not self.board:
@@ -25,6 +22,11 @@ class Game(object):
         # captures
         self.white_captures = []
         self.black_captures = []
+
+        # game state
+        self.black_moves = False
+        self.is_check = False
+        self.is_checkmate = False
 
     def init_new(self):
         """Initialize game. self.board must be present."""
@@ -44,11 +46,15 @@ class Game(object):
             piece_set[(2, 0)] = pieces.Piece(pieces.TypeBishop, is_black, id_prefix + 'b1')
             piece_set[(5, 0)] = pieces.Piece(pieces.TypeBishop, is_black, id_prefix + 'b2')
 
+            kqpos = [(3, 0), (4, 0)]
+            if is_black:
+                kqpos = [(4, 0), (3, 0)]
+
             # queen
-            piece_set[(3, 0)] = pieces.Piece(pieces.TypeQueen, is_black, id_prefix + 'Q')
+            piece_set[kqpos[0]] = pieces.Piece(pieces.TypeQueen, is_black, id_prefix + 'Q')
 
             # king
-            piece_set[(4, 0)] = pieces.Piece(pieces.TypeKing, is_black, id_prefix + 'K')
+            piece_set[kqpos[1]] = pieces.Piece(pieces.TypeKing, is_black, id_prefix + 'K')
 
             # pawns
             for i in range(8):
@@ -69,6 +75,14 @@ class Game(object):
             self.black_pieces.append(piece)
 
         return self
+
+    def strip(self):
+        """Strips all pieces off board (for testing purpose)"""
+        for row in self.game.squares:
+            for square in row:
+                piece = square.piece
+                if piece:
+                    self.capture(piece)
 
     def move(self, move=None):
         """Validates move and executes it. Returns captured pieces."""
@@ -95,16 +109,40 @@ class Game(object):
 
         captures = self.board_manager.move(self.board, move)
         for capture in captures:
-            if capture.is_black:
-                self.white_captures.append(capture)
-                self.black_pieces.remove(capture)
-            else:
-                self.black_captures.append(capture)
-                self.white_pieces.remove(capture)
+            self.capture(capture)
 
+        # check check
+        if self.black_moves:
+            kingpos = self.board.white_king_pos
+        else:
+            kingpos = self.board.black_king_pos
+
+        if pieces.TypeKing.checkSafe(kingpos, self.board.squares):
+            self.is_check = False
+        else:
+            self.is_check = True
+
+        # switch player
         self.black_moves = not self.black_moves
 
+        # check checkmate
+        available_moves = self.getAllMoves()
+        if len(available_moves) == 0:
+            self.is_checkmate = True
+        else:
+            self.is_checkmate = False
+
         return captures
+
+    def capture(self, piece):
+        if piece.is_black:
+            self.white_captures.append(piece)
+            self.black_pieces.remove(piece)
+        else:
+            self.black_captures.append(piece)
+            self.white_pieces.remove(piece)
+
+        piece.position = None
 
     def getAllMoves(self):
         """Returns all available moves for current player"""
@@ -133,7 +171,9 @@ class Game(object):
             'board':            self.board_manager.serialize(self.board),
             'black_moves':      self.black_moves,
             'black_captures':   black_captures_data,
-            'white_captures':   white_captures_data
+            'white_captures':   white_captures_data,
+            'is_check':         self.is_check,
+            'is_checkmate':     self.is_checkmate
         }
 
         return data
@@ -142,6 +182,8 @@ class Game(object):
         self.board_manager.deserialize(self.board, game_data['board']),
 
         self.black_moves = game_data['black_moves']
+        self.is_check = game_data['is_check']
+        self.is_checkmate = game_data['is_checkmate']
 
         self.black_captures = []
         for p in game_data['black_captures']:
