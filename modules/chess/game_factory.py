@@ -35,3 +35,35 @@ def make_whites_checkmate1():
     _game.move(pieces.PieceMove(((3, 0), (7, 4))))
 
     return _game
+
+
+def make_whites_castling_short():
+    """Makes game with whites shot castling possibility"""
+    _board = board.Board()
+    _game = game.Game(_board)
+
+    _game.init_new()
+    _game.strip()
+
+    _game.initPiece(_game.piece_list['WK'], (4, 0))
+    _game.initPiece(_game.piece_list['Wr1'], (7, 0))
+
+    _game.initPiece(_game.piece_list['BK'], (4, 7))
+
+    return _game
+
+
+def make_whites_castling_long():
+    """Makes game with whites long castling possibility"""
+    _board = board.Board()
+    _game = game.Game(_board)
+
+    _game.init_new()
+    _game.strip()
+
+    _game.initPiece(_game.piece_list['WK'], (4, 0))
+    _game.initPiece(_game.piece_list['Wr1'], (0, 0))
+
+    _game.initPiece(_game.piece_list['BK'], (4, 7))
+
+    return _game

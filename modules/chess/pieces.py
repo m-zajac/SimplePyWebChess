@@ -1,5 +1,7 @@
 """Pieces module"""
 
+from collections import OrderedDict
+
 
 class PieceMove(object):
     """Piece move object
@@ -39,6 +41,9 @@ class Piece(object):
         """Returns available moves offsets
         Returned moves are absolute
         """
+        if self.position is None:
+            return []
+
         if self.is_black:
             moves = self.type.getMoves(self, (7 - self.position[0], 7 - self.position[1]), board.squares_reversed)
             map(lambda m: m.rotate(), moves)
@@ -218,7 +223,41 @@ class TypeKing(object):
                 elif not o:
                     position_list.append((x, y))
 
-        return [PieceMove((position, p)) for p in position_list]
+        moves = [PieceMove((position, p)) for p in position_list]
+
+        # castling
+        if piece.moves_count == 0:
+            # castling - short
+            rook = squares[7][0].piece
+            if rook and rook.type == TypeRook and rook.moves_count == 0:
+                free_pass = True
+                for i in [5, 6]:
+                    if squares[0][i].piece:
+                        free_pass = False
+                        break
+
+                if free_pass:
+                    moves.append(PieceMove(
+                        (position, (6, 0)),
+                        ((7, 0), (5, 0))
+                    ))
+
+            # castling - long
+            rook = squares[0][0].piece
+            if rook and rook.type == TypeRook and rook.moves_count == 0:
+                free_pass = True
+                for i in range(1, 4):
+                    if squares[0][i].piece:
+                        free_pass = False
+                        break
+
+                if free_pass:
+                    moves.append(PieceMove(
+                        (position, (2, 0)),
+                        ((0, 0), (3, 0))
+                    ))
+
+        return moves
 
     @staticmethod
     def checkSafe(position, squares):
@@ -303,28 +342,30 @@ class TypeKing(object):
             return True
 
         # fake move
-        backup = {}
+        backup = OrderedDict()
         backup_type = piece.type
         for m in move.moves:
             _from = m[0]
             _to = m[1]
 
             #backup pieces
+            p = board.squares[_from[0]][_from[1]].piece
             backup[(_to[0], _to[1])] = board.squares[_to[0]][_to[1]].piece
-            backup[(_from[0], _from[1])] = board.squares[_from[0]][_from[1]].piece
+            backup[(_from[0], _from[1])] = p
 
-            piece.position = _to
-            board.squares[_to[0]][_to[1]].piece = piece
+            p.position = _to
+            board.squares[_to[0]][_to[1]].piece = p
             board.squares[_from[0]][_from[1]].piece = None
 
         if move.transformation:
-            board.squares[move.transformation[0]][move.transformation[1]].piece = move.transformation[1]
+            board.squares[move.transformation[0][0]][move.transformation[0][1]].piece = move.transformation[1]
 
         # check kings safety
         result = TypeKing.checkSafe(kingpos, board.squares)
 
         # revert move
-        for pos, p in backup.iteritems():
+        for pos, p in reversed(backup.items()):
+            print pos, p
             board.squares[pos[0]][pos[1]].piece = p
             if p:
                 p.position = pos

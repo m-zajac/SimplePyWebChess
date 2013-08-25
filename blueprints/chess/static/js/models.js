@@ -23,17 +23,48 @@ var Piece = Backbone.Model.extend({
     addMove: function(move) {
         var moves = this.get('moves');
         moves.push(move);
+        this.set('moves', moves);
     },
 
     canMoveTo: function(x, y) {
-        var moves = this.get('moves');
-        for (i in moves) {
-            var m = moves[i]
+        var moves_data = this.get('moves');
+        for (i in moves_data) {
+            var m = moves_data[i].moves[0][1]
             if (m[0] == x && m[1] == y) {
                 return true
             }
         }
         return false;
+    },
+
+    getMovePositions: function() {
+        var moves_data = this.get('moves');
+        if (!moves_data) {
+            return [];
+        }
+        
+        var moves = [];
+        for (i in moves_data) {
+            moves.push(moves_data[i].moves[0][1])
+        }
+
+        return moves;
+    },
+
+    getMoveByTarget: function(dest_array) {
+        var moves_data = this.get('moves');
+        if (!moves_data) {
+            return null;
+        }
+
+        for (i in moves_data) {
+            md = moves_data[i].moves[0][1]
+            if (md[0] == dest_array[0] && md[1] == dest_array[1]) {
+                return moves_data[i];
+            }
+        }
+
+        return null;
     }
 });
 

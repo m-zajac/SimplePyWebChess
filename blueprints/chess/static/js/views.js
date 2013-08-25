@@ -15,12 +15,12 @@
             var g = this;
             this.$el.hover(
                 function() {
-                    _.forEach(g.model.get('moves'), function(move) {
+                    _.forEach(g.model.getMovePositions(), function(move) {
                         $('.game .board td[data-x=' + move[0] + '][data-y=' + move[1] + ']').addClass('square-move-hint');
                     });
                 }, 
                 function() {
-                    _.forEach(g.model.get('moves'), function(move) {
+                    _.forEach(g.model.getMovePositions(), function(move) {
                         $('.game .board td[data-x=' + move[0] + '][data-y=' + move[1] + ']').removeClass('square-move-hint');
                     });
                 }

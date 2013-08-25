@@ -60,6 +60,11 @@
                             parseInt($(this).attr('data-y')),
                         ];
 
+                        var move = dragged_piece.getMoveByTarget(destination)
+                        if (!move) {
+                            return;
+                        }
+
                         // if there is other players piece, remove it
                         var captured_piece_el = $(this).find('.piece');
                         if (captured_piece_el.length > 0) {
@@ -72,7 +77,7 @@
                         dragged_piece.set('position', destination);
 
                         // move
-                        g.move(position, destination);
+                        g.move(move);
                     }
                 });
             });
@@ -110,7 +115,7 @@
             _.each(game_data.moves, function(move_data){
                 id = move_data.pid
                 piece = this.pieces.get(id)
-                piece.addMove(move_data.to)
+                piece.addMove(move_data.move)
             }, this);
 
             // trigger events
@@ -168,11 +173,11 @@
             return this;
         },
 
-        move: function(position, destination) {
+        move: function(move) {
             var g = this;
             var data = null;
-            if (position && destination) {
-                data = this._prepare_post_data([position, destination]);
+            if (move) {
+                data = this._prepare_post_data(move);
             } else {
                 data = this._prepare_post_data();
             }

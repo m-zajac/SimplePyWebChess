@@ -16,12 +16,13 @@ class Game(object):
         self.move_generator = move_generator
 
         # pieces in game
+        self.piece_list = {}
         self.white_pieces = []
         self.black_pieces = []
 
         # captures
-        self.white_captures = []
-        self.black_captures = []
+        self.white_captures = {}
+        self.black_captures = {}
 
         # game state
         self.black_moves = False
@@ -66,6 +67,7 @@ class Game(object):
         for pos, piece in white_pieces.iteritems():
             self.board_manager.initPiece(self.board, piece, pos, False)
             self.white_pieces.append(piece)
+            self.piece_list[piece.id] = piece
 
         black_pieces = make_piece_set(True, 'B')
         for pos, piece in black_pieces.iteritems():
@@ -73,12 +75,24 @@ class Game(object):
             pos = (7 - pos[0], 7 - pos[1])
             self.board_manager.initPiece(self.board, piece, pos, False)
             self.black_pieces.append(piece)
+            self.piece_list[piece.id] = piece
 
         return self
 
+    def initPiece(self, piece, pos):
+        """Initializes piece in game"""
+        self.board_manager.initPiece(self.board, piece, pos)
+        if pos:
+            if piece.id in self.black_captures:
+                del self.black_captures[piece.id]
+            if piece.id in self.white_captures:
+                del self.white_captures[piece.id]
+        else:
+            self.capture(piece)
+
     def strip(self):
         """Strips all pieces off board (for testing purpose)"""
-        for row in self.game.squares:
+        for row in self.board.squares:
             for square in row:
                 piece = square.piece
                 if piece:
@@ -136,13 +150,14 @@ class Game(object):
 
     def capture(self, piece):
         if piece.is_black:
-            self.white_captures.append(piece)
+            self.white_captures[piece.id] = piece
             self.black_pieces.remove(piece)
         else:
-            self.black_captures.append(piece)
+            self.black_captures[piece.id] = piece
             self.white_pieces.remove(piece)
 
-        piece.position = None
+        if piece.position:
+            self.board_manager.removePiece(self.board, piece)
 
     def getAllMoves(self):
         """Returns all available moves for current player"""
@@ -161,10 +176,10 @@ class Game(object):
         black_captures_data = []
         white_captures_data = []
 
-        for p in self.black_captures:
+        for id, p in self.black_captures.iteritems():
             black_captures_data.append(self.board_manager.serializePiece(p))
 
-        for p in self.white_captures:
+        for id, p in self.white_captures.iteritems():
             white_captures_data.append(self.board_manager.serializePiece(p))
 
         data = {
@@ -178,6 +193,28 @@ class Game(object):
 
         return data
 
+    def serialize_move(self, piece_move):
+        reverse_types_dict = {v: k for k, v in board.BoardManager.types_dict.items()}
+
+        return {
+            'moves': piece_move.moves,
+            'tp': piece_move.transformation[0] if piece_move.transformation else None,
+            'tt': reverse_types_dict[piece_move.transformation[1]] if piece_move.transformation else None,
+        }
+
+    def deserialize_move(self, data):
+        transformation = None
+        if 'tt' in data and data['tt']:
+            type = board.BoardManager.types_dict[data['tt']]
+            pos = data['tp']
+
+            transformation = (pos, type)
+
+        move = pieces.PieceMove(*data['moves'])
+        move.transformation = transformation
+
+        return move
+
     def deserialize(self, game_data):
         self.board_manager.deserialize(self.board, game_data['board']),
 
@@ -185,13 +222,15 @@ class Game(object):
         self.is_check = game_data['is_check']
         self.is_checkmate = game_data['is_checkmate']
 
-        self.black_captures = []
+        self.black_captures = {}
         for p in game_data['black_captures']:
-            self.black_captures.append(self.board_manager.deserializePiece(p))
+            piece = self.board_manager.deserializePiece(p)
+            self.black_captures[piece.id] = piece
 
-        self.white_captures = []
+        self.white_captures = {}
         for p in game_data['white_captures']:
-            self.white_captures.append(self.board_manager.deserializePiece(p))
+            piece = self.board_manager.deserializePiece(p)
+            self.white_captures[piece.id] = piece
 
         self.white_pieces = []
         self.black_pieces = []
