@@ -1,6 +1,17 @@
 """Pieces module"""
 
 from collections import OrderedDict
+from modules.utils import LazyDict
+
+
+# piece types dictionary
+types_dict = LazyDict()
+types_dict.addLazy('K', lambda: TypeKing)
+types_dict.addLazy('Q', lambda: TypeQueen)
+types_dict.addLazy('b', lambda: TypeBishop)
+types_dict.addLazy('k', lambda: TypeKnight)
+types_dict.addLazy('r', lambda: TypeRook)
+types_dict.addLazy('p', lambda: TypePawn)
 
 
 class PieceMove(object):
@@ -21,9 +32,41 @@ class PieceMove(object):
         #   type: TypeQueen, TypeRook ...
         self.transformation = None
 
+        # piece to capture
+        self.capture = None
+
     def rotate(self):
         """Transforms coordinates to other player"""
-        self.moves = map(lambda m: ((7-m[0][0], 7-m[0][1]), (7-m[1][0], 7-m[1][1])), self.moves)
+        self.moves = map(lambda m: ((7 - m[0][0], 7 - m[0][1]), (7 - m[1][0], 7 - m[1][1])), self.moves)
+
+    def serialize(self):
+        reverse_types_dict = {v: k for k, v in types_dict.items()}
+
+        return {
+            'moves': self.moves,
+            'tp': self.transformation[0] if self.transformation else None,
+            'tt': reverse_types_dict[self.transformation[1]] if self.transformation else None,
+            'c': self.capture.serialize() if self.capture else None,
+        }
+
+    @staticmethod
+    def deserialize(data):
+        transformation = None
+        if 'tt' in data and data['tt']:
+            type = types_dict[data['tt']]
+            pos = data['tp']
+
+            transformation = (pos, type)
+
+        capture = None
+        if 'c' in data:
+            capture = Piece.deserialize(data['c'])
+
+        move = PieceMove(*data['moves'])
+        move.transformation = transformation
+        move.capture = capture
+
+        return move
 
 
 class Piece(object):
@@ -54,6 +97,30 @@ class Piece(object):
         moves = filter(lambda m: TypeKing.checkSafeAfterMove(m, board), moves)
         return moves
 
+    def serialize(self):
+        reverse_types_dict = {v: k for k, v in types_dict.items()}
+
+        return {
+            'id': self.id,
+            't': reverse_types_dict[self.type],
+            'p': self.position,
+            'm': self.moves_count,
+            'b': self.is_black
+        }
+
+    @staticmethod
+    def deserialize(data):
+        if not data:
+            return None
+
+        ptype = types_dict[data['t']]
+        p = Piece(ptype, data['b'], data['id'])
+        p.moves_count = data['m']
+        if data['p']:
+            p.position = tuple(data['p'])
+
+        return p
+
     def __eq__(self, other):
         return self.id == other.id and self.type == other.type and self.is_black == other.is_black
 
@@ -75,7 +142,7 @@ class TypeBishop(object):
         for i in range(-1, 2, 2):
             for j in range(-1, 2, 2):
                 for d in range(1, 8):
-                    x, y = position[0]+i*d, position[1]+j*d
+                    x, y = position[0] + i * d, position[1] + j * d
 
                     if max(x, y) > 7 or min(x, y) < 0:
                         break
@@ -102,13 +169,13 @@ class TypeRook(object):
         for i in range(4):
             for d in range(1, 8):
                 if i == 0:
-                    x, y = position[0]+d, position[1]
+                    x, y = position[0] + d, position[1]
                 elif i == 1:
-                    x, y = position[0]-d, position[1]
+                    x, y = position[0] - d, position[1]
                 elif i == 2:
                     x, y = position[0], position[1] + d
                 else:
-                    x, y = position[0], position[1]-d
+                    x, y = position[0], position[1] - d
 
                 if max(x, y) > 7 or min(x, y) < 0:
                     break
@@ -163,7 +230,7 @@ class TypePawn(object):
     """Pawn"""
     @staticmethod
     def getMoves(piece, position, squares):
-        position_list = []
+        moves = []
         offsets = [(0, 1)]
         # if first move - may be 2 squares
         if piece.moves_count == 0 and position[1] == 1:
@@ -179,7 +246,7 @@ class TypePawn(object):
             if squares[x][y].piece:
                 break
 
-            position_list.append((x, y))
+            moves.append(PieceMove((position, (x, y))))
 
         # check attacks
         attacks = [(1, 1), (-1, 1)]
@@ -193,9 +260,28 @@ class TypePawn(object):
             if not o or o.is_black == piece.is_black:
                 continue
 
-            position_list.append((x, y))
+            moves.append(PieceMove((position, (x, y))))
 
-        return [PieceMove((position, p)) for p in position_list]
+        # en passant castling
+        if position[1] == 4:
+            opponent_positions = [(1, 0), (-1, 0)]
+            for op in opponent_positions:
+                x, y = position[0] + op[0], position[1] + op[1]
+
+                if max(x, y) > 7 or min(x, y) < 0:
+                    continue
+
+                o = squares[x][y].piece
+                if not o or o.is_black == piece.is_black:
+                    continue
+                if o.type != TypePawn or o.moves_count != 1:
+                    continue
+
+                move = PieceMove((position, (x, y + 1)))
+                move.capture = o
+                moves.append(move)
+
+        return moves
 
 
 class TypeKing(object):
@@ -213,7 +299,7 @@ class TypeKing(object):
                 if i == j == 0:
                     continue
 
-                x, y = position[0]+i, position[1]+j
+                x, y = position[0] + i, position[1] + j
                 if max(x, y) > 7 or min(x, y) < 0:
                     continue
 
@@ -272,7 +358,7 @@ class TypeKing(object):
         for i in range(-1, 2):
             for j in range(-1, 2):
                 for d in range(1, 8):
-                    x, y = position[0]+i*d, position[1]+j*d
+                    x, y = position[0] + i * d, position[1] + j * d
 
                     # stay on board
                     if max(x, y) > 7 or min(x, y) < 0:
@@ -365,7 +451,6 @@ class TypeKing(object):
 
         # revert move
         for pos, p in reversed(backup.items()):
-            print pos, p
             board.squares[pos[0]][pos[1]].piece = p
             if p:
                 p.position = pos
@@ -374,3 +459,6 @@ class TypeKing(object):
 
         # done
         return result
+
+
+types_dict.load()

@@ -122,6 +122,9 @@ class BoardManager(object):
 
     @staticmethod
     def serializePiece(piece):
+        if piece is None:
+            return None
+
         reverse_types_dict = {v: k for k, v in BoardManager.types_dict.items()}
 
         return {
@@ -134,6 +137,9 @@ class BoardManager(object):
 
     @staticmethod
     def deserializePiece(piecedata):
+        if not piecedata:
+            return None
+
         ptype = BoardManager.types_dict[piecedata['t']]
         p = pieces.Piece(ptype, piecedata['b'], piecedata['id'])
         p.moves_count = piecedata['m']

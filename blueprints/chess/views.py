@@ -1,5 +1,5 @@
 import json
-from flask import render_template, Response, request, abort
+from flask import render_template, Response, request
 from modules.chess import game, pieces
 from modules.chess.move_generators.gen_random import MoveGenerator as RandomMoveGenerator
 import modules.chess.game_factory as game_factory
@@ -34,24 +34,11 @@ def init(blueprint):
         return prepare_game_response(chessgame)
 
     # Game tests
-    @blueprint.route('/game/whites_check1', methods=['POST'])
-    def whites_check1():
-        _game = game_factory.make_whites_check1()
-        return prepare_game_response(_game)
-
-    @blueprint.route('/game/whites_checkmate1', methods=['POST'])
-    def whites_checkmate1():
-        _game = game_factory.make_whites_checkmate1()
-        return prepare_game_response(_game)
-
-    @blueprint.route('/game/whites_castling_short', methods=['POST'])
-    def whites_castling_short():
-        _game = game_factory.make_whites_castling_short()
-        return prepare_game_response(_game)
-
-    @blueprint.route('/game/whites_castling_long', methods=['POST'])
-    def whites_castling_long():
-        _game = game_factory.make_whites_castling_long()
+    @blueprint.route('/game/<test>', methods=['POST'])
+    def make_test(test):
+        test_method_name = 'make_%s' % test
+        test_method = getattr(game_factory, test_method_name)
+        _game = test_method()
         return prepare_game_response(_game)
 
 
@@ -73,7 +60,7 @@ def parse_game_request(chessgame=None):
     }
 
     if data and 'move' in data:
-        result['move'] = chessgame.deserialize_move(data['move'])
+        result['move'] = pieces.PieceMove.deserialize(data['move'])
 
     return result
 
@@ -88,7 +75,7 @@ def prepare_game_response(chessgame):
 
         piece_move_data.append({
             'pid': piece_id,
-            'move': chessgame.serialize_move(piece_move)
+            'move': piece_move.serialize()
         })
 
     return Response(

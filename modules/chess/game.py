@@ -6,8 +6,6 @@ import board
 class Game(object):
     """Game class"""
     def __init__(self, gameboard=None, move_generator=None):
-        super(Game, self).__init__()
-
         self.board_manager = board.BoardManager
         self.board = gameboard
         if not self.board:
@@ -121,9 +119,14 @@ class Game(object):
             if not (move_data[1][0], move_data[1][1]) in valid_destinations:
                 raise ValueError('Invalid move destination')
 
+        # captures from piece position in oponent piece position
         captures = self.board_manager.move(self.board, move)
         for capture in captures:
             self.capture(capture)
+
+        # other captures (en passant)
+        if move.capture:
+            self.capture(move.capture)
 
         # check check
         if self.black_moves:
@@ -177,10 +180,10 @@ class Game(object):
         white_captures_data = []
 
         for id, p in self.black_captures.iteritems():
-            black_captures_data.append(self.board_manager.serializePiece(p))
+            black_captures_data.append(p.serialize())
 
         for id, p in self.white_captures.iteritems():
-            white_captures_data.append(self.board_manager.serializePiece(p))
+            white_captures_data.append(p.serialize())
 
         data = {
             'board':            self.board_manager.serialize(self.board),
@@ -193,28 +196,6 @@ class Game(object):
 
         return data
 
-    def serialize_move(self, piece_move):
-        reverse_types_dict = {v: k for k, v in board.BoardManager.types_dict.items()}
-
-        return {
-            'moves': piece_move.moves,
-            'tp': piece_move.transformation[0] if piece_move.transformation else None,
-            'tt': reverse_types_dict[piece_move.transformation[1]] if piece_move.transformation else None,
-        }
-
-    def deserialize_move(self, data):
-        transformation = None
-        if 'tt' in data and data['tt']:
-            type = board.BoardManager.types_dict[data['tt']]
-            pos = data['tp']
-
-            transformation = (pos, type)
-
-        move = pieces.PieceMove(*data['moves'])
-        move.transformation = transformation
-
-        return move
-
     def deserialize(self, game_data):
         self.board_manager.deserialize(self.board, game_data['board']),
 
@@ -224,12 +205,12 @@ class Game(object):
 
         self.black_captures = {}
         for p in game_data['black_captures']:
-            piece = self.board_manager.deserializePiece(p)
+            piece = pieces.Piece.deserialize(p)
             self.black_captures[piece.id] = piece
 
         self.white_captures = {}
         for p in game_data['white_captures']:
-            piece = self.board_manager.deserializePiece(p)
+            piece = pieces.Piece.deserialize(p)
             self.white_captures[piece.id] = piece
 
         self.white_pieces = []
