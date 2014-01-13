@@ -11,9 +11,10 @@ var Piece = Backbone.Model.extend({
     image_prefix: '/chess/static/img',
     image_ext: 'png',
     image: 'Pawn',
+    type: 'p',
 
     initialize: function(is_black) {
-        this.is_black = !!is_black;
+        this.set('is_black', !!is_black);
     },
 
     getImage: function() {
@@ -51,43 +52,50 @@ var Piece = Backbone.Model.extend({
         return moves;
     },
 
-    getMoveByTarget: function(dest_array) {
+    getMovesByTarget: function(dest_array) {
         var moves_data = this.get('moves');
         if (!moves_data) {
             return null;
         }
 
+        var result = []
         for (i in moves_data) {
             md = moves_data[i].moves[0][1]
             if (md[0] == dest_array[0] && md[1] == dest_array[1]) {
-                return moves_data[i];
+                result.push(moves_data[i]);
             }
         }
 
-        return null;
+        return result;
     }
 });
 
 var King = Piece.extend({
-    image: 'King'
+    image: 'King',
+    type: 'K'
 });
 
 var Queen = Piece.extend({
-    image: 'Queen'
+    image: 'Queen',
+    type: 'Q'
 });
 
 var Rook = Piece.extend({
-    image: 'Rook'
+    image: 'Rook',
+    type: 'r'
 });
 
 var Knight = Piece.extend({
-    image: 'Knight'
+    image: 'Knight',
+    type: 'k'
 });
 
 var Bishop = Piece.extend({
-    image: 'Bishop'
+    image: 'Bishop',
+    type: 'b'
 });
 
 var Pawn = Piece.extend({
-    image: 'Pawn'
+    image: 'Pawn',
+    type: 'p'
 });

@@ -60,10 +60,21 @@
                             parseInt($(this).attr('data-y')),
                         ];
 
-                        var move = dragged_piece.getMoveByTarget(destination)
+                        var moves = dragged_piece.getMovesByTarget(destination)
+                        var move;
+
+                        if (moves.length > 1) {
+                            g.chooseMove(dragged_piece, moves);
+                            return;
+                        } else if (moves.length > 0) {
+                            move = moves[0];
+                        }
+
                         if (!move) {
                             return;
                         }
+
+                        var move = moves[0];
 
                         // if there is other players piece, remove it
                         var captured_piece_el = $(this).find('.piece');
@@ -138,6 +149,7 @@
                 piece = new types_dict[piecedata['t']];
                 piece.set('id', id);
                 piece.set('is_black', piecedata['b']);
+                piece.type = piecedata['t'];
                 this.pieces.add(piece);
 
                 view = new PieceView({
@@ -147,6 +159,11 @@
                 });
                 piece.view = view;
                 view.render();
+            } else if (piece.type != piecedata['t']) {
+                var new_type_piece = new types_dict[piecedata['t']];
+                piece.type = new_type_piece.type;
+                piece.image = new_type_piece.image;
+                piece.view.update();
             }
 
             piece.set('position', piecedata['p']);
@@ -202,6 +219,38 @@
                 'json'
             );
             return this;
+        },
+
+        chooseMove: function(piece, moves) {
+            var g = this;
+            var dialog = $('<div class="modal fade" style="width: 135px;"/>');
+            var dialog_header = $('<div class="modal-header"><button type="button" class="close" data-dismiss="modal">×</button><h3 id="myModalLabel">Choose piece</h3>');
+            var dialog_body = $('<div class="modal-body"/>');
+            var dialog_buttons = $('<div class="modal-footer"><button class="btn btn-inverse" data-dismiss="modal">Cancel</button>');
+            for (var i in moves) {
+                var new_p_class = types_dict[moves[i]['tt']]
+                if (!new_p_class) {
+                    continue;
+                }
+
+                var new_p = new new_p_class;
+                new_p.set('is_black', piece.get('is_black'));
+                var new_p_img = new_p.getImage();
+                var new_p_container = $('<div class="piece"/>');
+                new_p_container.append('<img src="' + new_p_img + '" alt=""/>');
+
+                var create_click_event = function(move){
+                    return function(){
+                        dialog.modal('hide');
+                        g.move(move);
+                    };
+                }
+                new_p_container.click(create_click_event(moves[i]));
+
+                dialog_body.append(new_p_container);
+            }
+
+            dialog.append(dialog_body).append(dialog_buttons).modal('show');
         },
 
         _prepare_post_data: function(move) {

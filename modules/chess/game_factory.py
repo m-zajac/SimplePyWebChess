@@ -105,3 +105,41 @@ def make_blacks_enpassant():
     _game.black_moves = False
 
     return _game
+
+
+def make_whites_promotion():
+    """Makes game with whites promotion possibility"""
+    _board = board.Board()
+    _game = game.Game(_board)
+
+    _game.init_new()
+    _game.strip()
+
+    _game.initPiece(_game.piece_list['WK'], (4, 0))
+    _game.initPiece(_game.piece_list['BK'], (2, 7))
+
+    _game.initPiece(_game.piece_list['Wp1'], (6, 6))
+    _game.initPiece(_game.piece_list['Bp1'], (1, 3))
+
+    _game.black_moves = False
+
+    return _game
+
+
+def make_blacks_promotion():
+    """Makes game with blacks promotion possibility"""
+    _board = board.Board()
+    _game = game.Game(_board)
+
+    _game.init_new()
+    _game.strip()
+
+    _game.initPiece(_game.piece_list['WK'], (4, 0))
+    _game.initPiece(_game.piece_list['BK'], (2, 4))
+
+    _game.initPiece(_game.piece_list['Wp1'], (6, 6))
+    _game.initPiece(_game.piece_list['Bp1'], (1, 1))
+
+    _game.black_moves = True
+
+    return _game

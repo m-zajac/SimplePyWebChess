@@ -97,6 +97,7 @@
                             g.$el.css({
                                 position: 'static'
                             });
+                            g.$el.find('img').attr('src', g.model.getImage());
                         }
                     }
                 );

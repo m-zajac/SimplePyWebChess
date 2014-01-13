@@ -93,6 +93,13 @@ class BoardManager(object):
             piece.position = end_pos
             piece.moves_count += 1
 
+            # transformation
+            if move_object.transformation:
+                pos, trans_piece_type = move_object.transformation
+                trans_piece = board.squares[pos[0]][pos[1]].piece
+                if trans_piece:
+                    trans_piece.type = trans_piece_type
+
             if piece.type == pieces.TypeKing:
                 if piece.is_black:
                     board.black_king_pos = piece.position

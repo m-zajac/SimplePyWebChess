@@ -19,11 +19,16 @@
     vertical-align: middle;
     overflow: hidden;
 }
-.game .board table td .piece, .game .board table td .piece img {
+.game .board table td .piece,
+.game .board table td .piece img,
+.modal .piece {
     margin: 0;
     padding: 0;
     border: 0;
     cursor: pointer;
+}
+.modal .piece {
+    float: left;
 }
 .game .board table td .piece.ui-draggable-dragging {
     transform:rotate(20deg);

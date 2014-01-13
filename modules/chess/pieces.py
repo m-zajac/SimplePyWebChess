@@ -38,6 +38,10 @@ class PieceMove(object):
     def rotate(self):
         """Transforms coordinates to other player"""
         self.moves = map(lambda m: ((7 - m[0][0], 7 - m[0][1]), (7 - m[1][0], 7 - m[1][1])), self.moves)
+        if self.transformation:
+            pos = self.transformation[0]
+            pos = (7 - pos[0], 7 - pos[1])
+            self.transformation = (pos, self.transformation[1])
 
     def serialize(self):
         reverse_types_dict = {v: k for k, v in types_dict.items()}
@@ -262,7 +266,7 @@ class TypePawn(object):
 
             moves.append(PieceMove((position, (x, y))))
 
-        # en passant castling
+        # en passant
         if position[1] == 4:
             opponent_positions = [(1, 0), (-1, 0)]
             for op in opponent_positions:
@@ -280,6 +284,20 @@ class TypePawn(object):
                 move = PieceMove((position, (x, y + 1)))
                 move.capture = o
                 moves.append(move)
+
+        # promotion
+        if position[1] == 6:
+            x, y = position[0], position[1] + 1
+
+            if max(x, y) <= 7 and min(x, y) >= 0:
+                o = squares[x][y].piece
+                if not o:
+                    # promotion available
+                    types = (TypeQueen, TypeKnight)
+                    for t in types:
+                        move = PieceMove((position, (x, y)))
+                        move.transformation = ((x, y), t)
+                        moves.append(move)
 
         return moves
 
@@ -444,7 +462,10 @@ class TypeKing(object):
             board.squares[_from[0]][_from[1]].piece = None
 
         if move.transformation:
-            board.squares[move.transformation[0][0]][move.transformation[0][1]].piece = move.transformation[1]
+            trans_pos = move.transformation[0]
+            trans_piece = board.squares[trans_pos[0]][trans_pos[1]].piece
+            if trans_piece:
+                trans_piece.type = move.transformation[1]
 
         # check kings safety
         result = TypeKing.checkSafe(kingpos, board.squares)
