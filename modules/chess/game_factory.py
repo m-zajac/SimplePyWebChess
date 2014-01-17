@@ -81,6 +81,7 @@ def make_whites_enpassant():
     _game.initPiece(_game.piece_list['BK'], (4, 7))
 
     _game.initPiece(_game.piece_list['Wp1'], (5, 4))
+    _game.initPiece(_game.piece_list['Wp2'], (3, 4))
     _game.initPiece(_game.piece_list['Bp1'], (4, 6))
 
     _game.black_moves = True
@@ -101,6 +102,7 @@ def make_blacks_enpassant():
 
     _game.initPiece(_game.piece_list['Wp1'], (5, 1))
     _game.initPiece(_game.piece_list['Bp1'], (4, 3))
+    _game.initPiece(_game.piece_list['Bp2'], (6, 3))
 
     _game.black_moves = False
 
@@ -118,8 +120,10 @@ def make_whites_promotion():
     _game.initPiece(_game.piece_list['WK'], (4, 0))
     _game.initPiece(_game.piece_list['BK'], (2, 7))
 
-    _game.initPiece(_game.piece_list['Wp1'], (6, 6))
+    _game.initPiece(_game.piece_list['Wp1'], (5, 6))
+    _game.initPiece(_game.piece_list['Wp2'], (6, 6))
     _game.initPiece(_game.piece_list['Bp1'], (1, 3))
+    _game.initPiece(_game.piece_list['Bp2'], (4, 7))
 
     _game.black_moves = False
 
@@ -141,5 +145,37 @@ def make_blacks_promotion():
     _game.initPiece(_game.piece_list['Bp1'], (1, 1))
 
     _game.black_moves = True
+
+    return _game
+
+
+def make_kings_fight():
+    """Makes game with two kings near each other"""
+    _board = board.Board()
+    _game = game.Game(_board)
+
+    _game.init_new()
+    _game.strip()
+
+    _game.initPiece(_game.piece_list['WK'], (2, 5))
+    _game.initPiece(_game.piece_list['BK'], (5, 2))
+
+    _game.black_moves = True
+
+    return _game
+
+def make_stalemate():
+    """Makes stalemate"""
+    _board = board.Board()
+    _game = game.Game(_board)
+
+    _game.init_new()
+    _game.strip()
+
+    _game.initPiece(_game.piece_list['WK'], (7, 5))
+    _game.initPiece(_game.piece_list['WQ'], (5, 5))
+    _game.initPiece(_game.piece_list['BK'], (6, 7))
+
+    _game.black_moves = False
 
     return _game

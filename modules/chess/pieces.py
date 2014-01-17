@@ -250,7 +250,15 @@ class TypePawn(object):
             if squares[x][y].piece:
                 break
 
-            moves.append(PieceMove((position, (x, y))))
+            if position[1] == 6:
+                # promotion
+                types = (TypeQueen, TypeKnight)
+                for t in types:
+                    move = PieceMove((position, (x, y)))
+                    move.transformation = ((x, y), t)
+                    moves.append(move)
+            else:
+                moves.append(PieceMove((position, (x, y))))
 
         # check attacks
         attacks = [(1, 1), (-1, 1)]
@@ -264,7 +272,15 @@ class TypePawn(object):
             if not o or o.is_black == piece.is_black:
                 continue
 
-            moves.append(PieceMove((position, (x, y))))
+            if position[1] == 6:
+                # promotion
+                types = (TypeQueen, TypeKnight)
+                for t in types:
+                    move = PieceMove((position, (x, y)))
+                    move.transformation = ((x, y), t)
+                    moves.append(move)
+            else:
+                moves.append(PieceMove((position, (x, y))))
 
         # en passant
         if position[1] == 4:
@@ -286,18 +302,18 @@ class TypePawn(object):
                 moves.append(move)
 
         # promotion
-        if position[1] == 6:
-            x, y = position[0], position[1] + 1
+        # if position[1] == 6:
+        #     x, y = position[0], position[1] + 1
 
-            if max(x, y) <= 7 and min(x, y) >= 0:
-                o = squares[x][y].piece
-                if not o:
-                    # promotion available
-                    types = (TypeQueen, TypeKnight)
-                    for t in types:
-                        move = PieceMove((position, (x, y)))
-                        move.transformation = ((x, y), t)
-                        moves.append(move)
+        #     if max(x, y) <= 7 and min(x, y) >= 0:
+        #         o = squares[x][y].piece
+        #         if not o:
+        #             # promotion available
+        #             types = (TypeQueen, TypeKnight)
+        #             for t in types:
+        #                 move = PieceMove((position, (x, y)))
+        #                 move.transformation = ((x, y), t)
+        #                 moves.append(move)
 
         return moves
 
@@ -387,6 +403,8 @@ class TypeKing(object):
                         if o.is_black == king_is_black:
                             # friendly piece, no threat from this direction
                             break
+                        elif d == 1 and o.type == TypeKing:
+                            return False
                         elif o.type in TypeKing.threats_diagonal and abs(i) == abs(j):
                             return False
                         elif o.type in TypeKing.threats_orthogonal and abs(i) != abs(j):

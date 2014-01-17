@@ -152,7 +152,7 @@
 
         // game events
         this.game.on('update', function(for_black){
-            $('.player_marker.black, .player_marker.white').removeClass('checkmate check active');
+            $('.player_marker.black, .player_marker.white').removeClass('checkmate check stalemate active');
             if (self.game.black_moves) {
                 $('.player_marker.black').addClass('active');
             } else {
@@ -171,6 +171,13 @@
                 $('.player_marker.black').addClass('checkmate');
             } else {
                 $('.player_marker.white').addClass('checkmate');
+            }
+        });
+        this.game.on('stalemate', function(for_black){
+            if (for_black) {
+                $('.player_marker.black').addClass('stalemate');
+            } else {
+                $('.player_marker.white').addClass('stalemate');
             }
         });
     }

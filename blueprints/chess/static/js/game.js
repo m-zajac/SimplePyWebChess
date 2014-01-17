@@ -132,11 +132,12 @@
             // trigger events
             this.trigger('update');
 
-            if (this.is_check) {
+            if (this.is_check && !this.is_checkmate) {
                 this.trigger('check', this.black_moves);
-            }
-            if (this.is_checkmate) {
+            } else if (this.is_check && this.is_checkmate) {
                 this.trigger('checkmate', this.black_moves);
+            } else if (!this.is_check && this.is_checkmate) {
+                this.trigger('stalemate', this.black_moves);
             }
 
             return this;
@@ -211,9 +212,11 @@
                         ||
                         (!g.black_moves && !g.white_player_human)
                     ) {
-                        setTimeout(function(){
-                            g.move();
-                        }, 1000 );
+                        if (!g.is_checkmate) {
+                            setTimeout(function(){
+                                g.move();
+                            }, 1000 );
+                        }
                     }
                 },
                 'json'
