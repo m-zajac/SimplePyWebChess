@@ -26,7 +26,7 @@ class Board(object):
         self.squares = [[Square(not ((i + j) % 2)) for i in range(8)] for j in range(8)]
 
         # symmetrical board, for moving black pieces
-        self.squares_reversed = [[self.squares[7-j][7-i] for i in range(8)] for j in range(8)]
+        self.squares_reversed = [[self.squares[7 - j][7 - i] for i in range(8)] for j in range(8)]
 
         # kings positions
         self.white_king_pos = None
@@ -136,10 +136,10 @@ class BoardManager(object):
 
         return {
             'id': piece.id,
-            't':  reverse_types_dict[piece.type],
-            'p':  piece.position,
-            'm':  piece.moves_count,
-            'b':  piece.is_black
+            't': reverse_types_dict[piece.type],
+            'p': piece.position,
+            'm': piece.moves_count,
+            'b': piece.is_black
         }
 
     @staticmethod

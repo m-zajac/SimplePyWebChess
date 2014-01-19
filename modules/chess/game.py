@@ -85,6 +85,11 @@ class Game(object):
                 del self.black_captures[piece.id]
             if piece.id in self.white_captures:
                 del self.white_captures[piece.id]
+
+            if piece.is_black:
+                self.black_pieces.append(piece)
+            else:
+                self.white_pieces.append(piece)
         else:
             self.capture(piece)
 
@@ -100,7 +105,7 @@ class Game(object):
         """Validates move and executes it. Returns captured pieces."""
         if not move:
             # empty destination, run move generator
-            move = self.move_generator.move(self)
+            move = self.move_generator(self)
 
         for move_data in move.moves:
             piece = self.board.squares[move_data[0][0]][move_data[0][1]].piece

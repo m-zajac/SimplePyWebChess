@@ -164,6 +164,7 @@ def make_kings_fight():
 
     return _game
 
+
 def make_stalemate():
     """Makes stalemate"""
     _board = board.Board()

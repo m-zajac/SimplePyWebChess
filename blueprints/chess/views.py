@@ -1,7 +1,7 @@
 import json
 from flask import render_template, Response, request
 from modules.chess import game, pieces
-from modules.chess.move_generators.gen_random import MoveGenerator as RandomMoveGenerator
+from modules.chess import move_generators
 import modules.chess.game_factory as game_factory
 
 
@@ -13,7 +13,7 @@ def init(blueprint):
 
     @blueprint.route('/game/init', methods=['POST'])
     def init():
-        chessgame = game.Game(None, RandomMoveGenerator())
+        chessgame = game.Game()
         chessgame.init_new()
 
         return prepare_game_response(chessgame)
@@ -49,7 +49,10 @@ def parse_game_request(chessgame=None):
         data = None
 
     if not chessgame:
-        chessgame = game.Game(None, RandomMoveGenerator())
+        # generator = move_generators.gen_rand.randomGenerator
+        generator = lambda g: move_generators.gen_minimax.minimaxGenerator(g, level=2)
+
+        chessgame = game.Game(None, generator)
         chessgame.init_new()
 
     if data and 'game_data' in data:

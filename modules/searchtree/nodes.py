@@ -28,7 +28,7 @@ class DepthFirstNode(object):
         self.nodes.append(node)
         return self
 
-    def preorder(self, parent=None):
+    def preorder(self):
         self.evaluate()
 
         node = None
@@ -43,12 +43,11 @@ class DepthFirstNode(object):
 
         return self
 
-    def postorder(self, parent=None):
+    def postorder(self):
         node = None
         try:
             for node in self.nodes:
                 self.traverseNode(node)
-                self.evaluations += node.evaluations
         except StopIterationBeforeNodeTraverse:
             pass
         except StopIterationAfterNodeTraverse:
@@ -59,10 +58,14 @@ class DepthFirstNode(object):
         return self
 
     def traverseNode(self, node):
-        node.traverse(self)
+        node.traverse()
 
     def evaluate(self):
         self.evaluations += 1
+        self.doEvaluate()
+
+    def doEvaluate(self):
+        pass
 
     def __str__(self):
         return 'data: ' + str(self.data) + ', ' + str(len(self.nodes)) + ' nodes, value: ' + str(self.value)
@@ -75,7 +78,8 @@ class MinNode(DepthFirstNode):
         super(MinNode, self).__init__(data, value, 'postorder')
 
     def evaluate(self):
-        self.evaluations += 1
+        super(MinNode, self).evaluate()
+
         if len(self.nodes) > 0:
             data = self.data
             min_value = sys.maxint
@@ -95,7 +99,8 @@ class MaxNode(DepthFirstNode):
         super(MaxNode, self).__init__(data, value, 'postorder')
 
     def evaluate(self):
-        self.evaluations += 1
+        super(MaxNode, self).evaluate()
+
         if len(self.nodes) > 0:
             data = self.data
             max_value = -sys.maxint
@@ -123,7 +128,7 @@ class MinABNode(MinNode):
         node.beta = self.beta
 
         # traverse node
-        node.traverse(self)
+        node.traverse()
 
         # update beta
         self.beta = min(self.beta, node.value)
@@ -148,7 +153,7 @@ class MaxABNode(MaxNode):
         node.beta = self.beta
 
         # traverse node
-        node.traverse(self)
+        node.traverse()
 
         # update alpha
         self.alpha = max(self.alpha, node.value)

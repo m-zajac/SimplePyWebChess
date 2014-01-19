@@ -2,9 +2,10 @@
 import unittest
 import operator
 import json
-import board
-import pieces
-import game
+
+from . import board
+from . import pieces
+from . import game
 
 
 class BoardTests(unittest.TestCase):

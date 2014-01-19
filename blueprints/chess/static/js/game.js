@@ -29,6 +29,7 @@
         this.black_player_human = true;
         this.is_check = false;
         this.is_checkmate = false;
+        this.locked = false;
     }
 
     
@@ -44,6 +45,10 @@
                 $(this).droppable({
                     hoverClass: 'square-hover',
                     accept: function(draggable){
+                        if (g.locked) {
+                            return false;
+                        }
+
                         var x = $(this).attr('data-x');
                         var y = $(this).attr('data-y');
                         var id = $(draggable[0]).attr('id');
@@ -51,6 +56,10 @@
                         return piece.canMoveTo(x, y);
                     },
                     drop: function(event, ui) {
+                        if (g.locked) {
+                            return false;
+                        }
+
                         var dragged_piece_id = ui.draggable.first().attr('id');
                         var dragged_piece = g.pieces.get(dragged_piece_id);
 
@@ -200,6 +209,7 @@
                 data = this._prepare_post_data();
             }
 
+            g.locked = true;
             $.post(
                 this.urls.move,
                 data,
@@ -218,6 +228,8 @@
                             }, 1000 );
                         }
                     }
+
+                    g.locked = false;
                 },
                 'json'
             );

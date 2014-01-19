@@ -72,6 +72,9 @@ class PieceMove(object):
 
         return move
 
+    def __str__(self):
+        return "moves: {m}, trans: {t}, cap: {c}".format(m=self.moves, t=self.transformation, c=self.capture)
+
 
 class Piece(object):
     """Base piece class"""
@@ -139,6 +142,9 @@ class Piece(object):
 
 class TypeBishop(object):
     """Bishop"""
+
+    value = 3
+
     @staticmethod
     def getMoves(piece, position, squares):
         """One+ square in each diagonal direction"""
@@ -166,6 +172,9 @@ class TypeBishop(object):
 
 class TypeRook(object):
     """Rook"""
+
+    value = 5
+
     @staticmethod
     def getMoves(piece, position, squares):
         """Horizontal + vertical moves"""
@@ -199,6 +208,9 @@ class TypeRook(object):
 
 class TypeQueen(object):
     """Queen"""
+
+    value = 9
+
     @staticmethod
     def getMoves(piece, position, squares):
         return TypeRook.getMoves(piece, position, squares) + TypeBishop.getMoves(piece, position, squares)
@@ -206,6 +218,9 @@ class TypeQueen(object):
 
 class TypeKnight(object):
     """Knight"""
+
+    value = 3
+
     @staticmethod
     def getMoves(piece, position, squares):
         """L moves"""
@@ -232,6 +247,9 @@ class TypeKnight(object):
 
 class TypePawn(object):
     """Pawn"""
+
+    value = 1
+
     @staticmethod
     def getMoves(piece, position, squares):
         moves = []
@@ -321,6 +339,7 @@ class TypePawn(object):
 class TypeKing(object):
     """King"""
 
+    value = 1000
     threats_diagonal = set([TypeQueen, TypeBishop])
     threats_orthogonal = set([TypeQueen, TypeRook])
 
@@ -352,7 +371,7 @@ class TypeKing(object):
             if rook and rook.type == TypeRook and rook.moves_count == 0:
                 free_pass = True
                 for i in [5, 6]:
-                    if squares[0][i].piece:
+                    if squares[i][0].piece:
                         free_pass = False
                         break
 
@@ -367,7 +386,7 @@ class TypeKing(object):
             if rook and rook.type == TypeRook and rook.moves_count == 0:
                 free_pass = True
                 for i in range(1, 4):
-                    if squares[0][i].piece:
+                    if squares[i][0].piece:
                         free_pass = False
                         break
 
