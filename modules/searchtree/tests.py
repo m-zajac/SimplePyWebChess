@@ -126,15 +126,15 @@ class MinimaxTests(unittest.TestCase):
         # http://en.wikipedia.org/wiki/File:AB_pruning.svg
 
         # leafs - max nodes- level 4
-        l1  = MaxNode('l1', 5)
-        l2  = MaxNode('l2', 6)
-        l3  = MaxNode('l3', 7)
-        l4  = MaxNode('l4', 4)
-        l5  = MaxNode('l5', 5)
-        l6  = MaxNode('l6', 3)
-        l7  = MaxNode('l7', 6)
-        l8  = MaxNode('l8', 6)
-        l9  = MaxNode('l9', 9)
+        l1 = MaxNode('l1', 5)
+        l2 = MaxNode('l2', 6)
+        l3 = MaxNode('l3', 7)
+        l4 = MaxNode('l4', 4)
+        l5 = MaxNode('l5', 5)
+        l6 = MaxNode('l6', 3)
+        l7 = MaxNode('l7', 6)
+        l8 = MaxNode('l8', 6)
+        l9 = MaxNode('l9', 9)
         l10 = MaxNode('l10', 7)
         l11 = MaxNode('l11', 5)
         l12 = MaxNode('l12', 9)
@@ -174,14 +174,14 @@ class MinimaxTests(unittest.TestCase):
         """Best a-b case"""
 
         # leafs - min nodes- level 3
-        l1  = MinNode('l1', 4)
-        l2  = MinNode('l2', 1)
-        l3  = MinNode('l3', 6)
-        l4  = MinNode('l4', 2)
-        l5  = MinNode('l5', 3)
-        l6  = MinNode('l6', 0)
-        l7  = MinNode('l7', 7)
-        l8  = MinNode('l8', 8)
+        l1 = MinNode('l1', 4)
+        l2 = MinNode('l2', 1)
+        l3 = MinNode('l3', 6)
+        l4 = MinNode('l4', 2)
+        l5 = MinNode('l5', 3)
+        l6 = MinNode('l6', 0)
+        l7 = MinNode('l7', 7)
+        l8 = MinNode('l8', 8)
 
         # level 2 - max nodes
         n2_1 = MaxNode().addNode(l1).addNode(l2)
