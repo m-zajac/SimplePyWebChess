@@ -48,6 +48,7 @@ class DepthFirstNode(object):
         try:
             for node in self.nodes:
                 self.traverseNode(node)
+                self.evaluations += node.evaluations
         except StopIterationBeforeNodeTraverse:
             pass
         except StopIterationAfterNodeTraverse:
